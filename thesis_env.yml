@@ -1,0 +1,6 @@
+name: thesis_env
+channels:
+  - defaults
+dependencies:
+  - python=3.7
+prefix: /home/diafrate/anaconda3/envs/thesis_env

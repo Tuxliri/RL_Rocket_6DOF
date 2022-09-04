@@ -1,4 +1,3 @@
-from distutils.command.config import config
 from numpy import pi
 
 env_config = {

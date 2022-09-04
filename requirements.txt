@@ -41,7 +41,7 @@ Markdown==3.4.1
 matplotlib==3.5.2
 multidict==6.0.2
 munch==2.5.0
--e git+https://github.com/Tuxliri/RL_rocket.git@285e288237ad76e4f87d9831a3262facf24f73c2#egg=my_environment
+-e git+https://github.com/Tuxliri/RL_Rocket_6DOF.git@297d601f2c5eb7ad1b546354e55e5c46e6ac949f#egg=my_environment
 numpy==1.21.6
 oauthlib==3.2.0
 opencv-python==4.6.0.66

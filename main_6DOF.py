@@ -92,16 +92,17 @@ def start_training():
         callback=callbacksList
     )
 
-    annealed_env = make_annealed_env()
+    # annealed_env = make_annealed_env()
 
-    model.set_env(annealed_env)
+    # model.set_env(annealed_env)
 
-    # Train the ANNEALED model
-    model.learn(
-        total_timesteps=sb3_config["total_timesteps"],
-        callback=callbacksList
-    )
+    # # Train the ANNEALED model
+    # model.learn(
+    #     total_timesteps=sb3_config["total_timesteps"],
+    #     callback=callbacksList
+    # )
     
+    # Save the model to .zip file
     savepath = os.getcwd()
     model.save(savepath)
 

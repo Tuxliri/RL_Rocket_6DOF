@@ -19,7 +19,7 @@ env_config = {
         1e3
         ],
     "reward_coeff": {
-        "alfa": -0.01,
+        "alfa": -0.01*1/4,
         "beta": -1e-7,
         "delta": -5,
         "eta": 0.05,

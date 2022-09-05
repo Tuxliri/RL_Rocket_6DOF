@@ -1,8 +1,6 @@
 __all__ = [
     "GaudetStateObs",
     "RewardAnnealing",
-    "RecordVideoFigure",
-    "EpisodeAnalyzer6DOF",
     "EpisodeAnalyzer",
 ]
 
@@ -10,7 +8,7 @@ import gym
 from gym.spaces import Box
 from matplotlib import pyplot as plt
 
-from my_environment.envs.rocket_env import Rocket, Rocket6DOF
+from my_environment.envs.rocket_env import Rocket6DOF
 import numpy as np
 import wandb
 import pandas as pd
@@ -18,21 +16,22 @@ import pandas as pd
 pd.options.plotting.backend = "plotly"
 
 class GaudetStateObs(gym.ObservationWrapper): #TODO: adapt to 6DOF environment
-    def __init__(self, env: Rocket) -> None:
+    def __init__(self, env: Rocket6DOF) -> None:
         super().__init__(env)
         self.observation_space = Box(low=-1, high=1, shape=(4,))
 
     def observation(self, observation):
-        x, y, th = observation[0:3]
-        vx, vy, vth = observation[3:6]
+        x, y, z = observation[0:3]
+        vx, vy, vz = observation[3:6]
+        q = observation[6:10]
+        omega = observation[10:13]
 
-        r = np.array([x, y])
-        v = np.array([vx, vy])
+        r = np.array([x, y, z])
+        v = np.array([vx, vy, vz])
 
-        v_targ, t_go = self.env.unwrapped.compute_vtarg(r, v)
-        vx_targ, vy_targ = v_targ
+        v_targ, t_go = self.env.unwrapped.get_vtarg(r, v)
 
-        return np.float32([vx - vx_targ, vy - vy_targ, t_go, y])
+        return np.concatenate([v-v_targ, q, omega, [z], [t_go]])
 
 class RewardAnnealing(gym.Wrapper):
     def __init__(self, env: gym.Env, thrust_penalty : float = 0.01) -> None:

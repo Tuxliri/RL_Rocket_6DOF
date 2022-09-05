@@ -3,6 +3,7 @@ Script to test functionality of the 6DOF environment
 """
 
 from my_environment.envs import Rocket6DOF
+from my_environment.wrappers import GaudetStateObs
 from gym.wrappers import RecordVideo
 
 # Import the initial conditions from the setup file
@@ -11,7 +12,7 @@ from gym.wrappers import RecordVideo
 
 # Instantiate the environment
 kwargs = env_config
-env = Rocket6DOF(**kwargs)
+env = GaudetStateObs(Rocket6DOF(**kwargs))
 
 # env=RecordVideo(env,video_folder="video_6DOF")
 

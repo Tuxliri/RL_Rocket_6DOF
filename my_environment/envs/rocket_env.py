@@ -524,6 +524,9 @@ class Rocket6DOF(Env):
 
         return v_targ, t_go
 
+    def get_vtarg(self,r,v):
+        return self._compute_vtarg(r,v)
+        
     def states_to_dataframe(self):
         import pandas as pd
 

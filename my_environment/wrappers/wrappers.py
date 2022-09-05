@@ -86,7 +86,7 @@ class EpisodeAnalyzer(gym.Wrapper):
                         "ep_history/actions": actions_dataframe.plot(),
                         "ep_history/vtarg": vtarg_dataframe.plot(),
                         "ep_history/rewards": fig_rew,
-                        "plots3d/vtarg_trajectory": self.env.unwrapped.get_vtarg_trajectory(),
+                        "plots3d/vtarg_trajectory": self.env.unwrapped.get_vtarg_plotly(),
                         "plots3d/trajectory": fig,
                         "ep_statistic/landing_success": info["rewards_dict"]["rew_goal"],
                         "ep_statistic/used_mass" : states_dataframe.iloc[0,-1] - states_dataframe.iloc[-1,-1],

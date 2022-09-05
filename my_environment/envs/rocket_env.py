@@ -389,16 +389,6 @@ class Rocket6DOF(Env):
 
         fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z")
 
-        # Set camera location
-        camera = dict(
-            up=dict(x=1, y=0, z=0),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=0.5 * 1.25, y=1.25, z=0 * 1.25),
-        )
-
-        # fig.update_layout(scene_camera=camera)
-        # x_f, y_f, z_f = self.landing_target
-
         # Add landing pad location and velocity vectors
         z = np.linspace(-self.target_r,self.target_r,100)
         y = np.linspace(-self.target_r,self.target_r,100)
@@ -407,58 +397,76 @@ class Rocket6DOF(Env):
         xv=1.*(zv**2+yv**2<self.target_r**2)
 
         fig.add_surface(x=xv,y=yv,z=zv,surfacecolor=xv,showscale=False)
-        
+
+        # Get a subset of the trajectory dataframe
+        index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-1),num=30).astype(int)
+        reduced_trajectory_df = trajectory_df.iloc[index_list]
+
         # Add velocity vector
         fig.add_cone(
-            x=trajectory_df["x"],
-            y=trajectory_df["y"],
-            z=trajectory_df["z"],
-            u=trajectory_df["vx"],
-            v=trajectory_df["vy"],
-            w=trajectory_df["vz"],
-            sizeref=3,
+            x=reduced_trajectory_df["x"],
+            y=reduced_trajectory_df["y"],
+            z=reduced_trajectory_df["z"],
+            u=reduced_trajectory_df["vx"],
+            v=reduced_trajectory_df["vy"],
+            w=reduced_trajectory_df["vz"],
+            sizeref=1,
         )
 
-        fig.update_layout(scene_aspectmode='data')
+        fig.update_layout(
+            scene = dict(
+                    xaxis_title='X [m]',
+                    yaxis_title='Y [m]',
+                    zaxis_title='Z [m]',
+                    aspectmode='data',
+                    camera_up=dict(x=1, y=0, z=0)
+                    )
+        )
         return fig
 
-    def _vtarg_plot_figure(self, trajectory_df: DataFrame):
+    def _vtarg_plotly_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
         
         # Create vtarg dataframe
         vtarg_df = self.vtarg_to_dataframe()
 
-        fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z")
+        fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z",)
 
-        # Set camera location
-        camera = dict(
-            up=dict(x=1, y=0, z=0),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=0.5 * 1.25, y=1.25, z=0 * 1.25),
-        )
-
-        fig.update_layout(scene_camera=camera)
         x_f, y_f, z_f = self.landing_target
 
         # Add landing pad location and velocity vector
         fig.add_scatter3d(x=[x_f], y=[y_f], z=[z_f])
+
+        # Get a subset of the trajectory dataframe
+        index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-2),num=30).astype(int)
+        reduced_trajectory_df = trajectory_df.iloc[index_list]
+        reduced_vtarg_df = vtarg_df.iloc[index_list]
+
         fig.add_cone(
-            x=trajectory_df["x"],
-            y=trajectory_df["y"],
-            z=trajectory_df["z"],
-            u=vtarg_df["v_x"], # TODO: CHANGE TO vtarg
-            v=vtarg_df["v_y"],
-            w=vtarg_df["v_z"],
+            x=reduced_trajectory_df["x"],
+            y=reduced_trajectory_df["y"],
+            z=reduced_trajectory_df["z"],
+            u=reduced_vtarg_df["v_x"],
+            v=reduced_vtarg_df["v_y"],
+            w=reduced_vtarg_df["v_z"],
             sizeref=3,
         )
 
-        fig.update_layout(scene_aspectmode='data')
+        fig.update_layout(
+            scene = dict(
+                    xaxis_title='X [m]',
+                    yaxis_title='Y [m]',
+                    zaxis_title='Z [m]',
+                    aspectmode='data',
+                    camera_up=dict(x=1, y=0, z=0)
+                    )
+        )
 
         return fig
 
-    def get_vtarg_trajectory(self):
+    def get_vtarg_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
-        return self._vtarg_plot_figure(trajectory_dataframe)
+        return self._vtarg_plotly_figure(trajectory_dataframe)
 
     def _plotly_fig2array(self, plotly_fig):
         # convert Plotly fig to  an array

@@ -8,7 +8,7 @@ import gym
 from gym.spaces import Box
 from matplotlib import pyplot as plt
 
-from my_environment.envs.rocket_env import Rocket, Rocket6DOF
+from my_environment.envs.rocket_env import Rocket6DOF
 import numpy as np
 import wandb
 import pandas as pd

@@ -3,9 +3,21 @@ from numpy import pi
 env_config = {
     "timestep": 0.1,
     "seed": 42,
-    "IC": [500, 100, 100, -50, 0, 0, 1, 0, 0, 0, 0, 0, 0, 45e3],
+    "IC": [
+        2000, -1600, 300,
+        -50, -90, 180,
+        0.8660254, 0, 0, -0.5,
+        0, 0, 0,
+        45e3
+        ],
     #"ICRange": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "ICRange": [50, 10, 10, 10, 10, 10, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1e3],
+    "ICRange": [
+        50, 10, 10,
+        10, 10, 10,
+        0.1, 0.1, 0.1, 0.1,
+        0.1, 0.1, 0.1,
+        1e3
+        ],
     "reward_coeff": {
         "alfa": -0.01,
         "beta": -1e-7,
@@ -33,7 +45,7 @@ env_config = {
 }
 
 TOTAL_TIMESTEP = int(1e6)
-MAX_TIME = 80
+MAX_TIME = 150
 
 sb3_config = {
     "env_id": "my_environment/Falcon6DOF-v0",

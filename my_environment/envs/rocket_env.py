@@ -245,17 +245,21 @@ class Rocket6DOF(Env):
             self.plotter = pv.Plotter(args)
             self._add_meshes_to_plotter()
 
+            
+
+            # Set desired camera position
+            cpos = [
+                (2.e+03,  1.00e+01, -5.0e+03),  
+                (1.e+03, -1.00e+02, 4.5e+02),  
+                (1, 0, 0)
+                ]
+
+            self.plotter.camera_position = cpos
             self.plotter.show(
                 auto_close=False,
                 interactive=False,
                 # interactive_update=True,
             )
-
-            # Set desired camera position
-            cpos = [(783.93, -265.23, -1118.80),
-                    (262.5, 35.91, 35.91),
-                    (0.9150, 0.1524, 0.3734)]
-            self.plotter.camera_position = cpos
                 
 
         # Move the rocket towards its new location

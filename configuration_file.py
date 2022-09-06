@@ -22,7 +22,7 @@ env_config = {
         "alfa": -0.01*1/4,
         "beta": 0*-1e-7,
         "delta": -5,
-        "eta": 0.05,
+        "eta": 0.01,
         "gamma": -10,
         "kappa": 10,
         "xi": 0.004,

@@ -53,7 +53,8 @@ def start_training():
     have_display = bool(os.environ.get('DISPLAY', None))
     if not have_display:
         from pyvista.utilities.xvfb import start_xvfb
-
+        start_xvfb()
+        
     run = wandb.init(
         config={**env_config, **sb3_config},
         project='RL_rocket_6DOF',

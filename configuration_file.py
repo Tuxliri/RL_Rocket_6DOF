@@ -26,7 +26,7 @@ env_config = {
         ],
     "reward_coeff": {
         "alfa": -0.01*1/4,
-        "beta": -1e-7,
+        "beta": 0*-1e-7,
         "delta": -5,
         "eta": 0.05,
         "gamma": -10,

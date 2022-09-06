@@ -1,8 +1,6 @@
 __all__ = [
     "GaudetStateObs",
     "RewardAnnealing",
-    "RecordVideoFigure",
-    "EpisodeAnalyzer6DOF",
     "EpisodeAnalyzer",
 ]
 
@@ -18,7 +16,7 @@ import pandas as pd
 pd.options.plotting.backend = "plotly"
 
 class GaudetStateObs(gym.ObservationWrapper): #TODO: adapt to 6DOF environment
-    def __init__(self, env: Rocket) -> None:
+    def __init__(self, env) -> None:
         super().__init__(env)
         self.observation_space = Box(low=-1, high=1, shape=(4,))
 

@@ -29,7 +29,7 @@ env_config = {
     },
     "trajectory_limits": {"attitude_limit": [1.5, 1.5, 2 * pi]},
     "landing_params": {
-        "waypoint": 50,
+        "waypoint": 150,
         "landing_radius": 30,
         "maximum_velocity": 10,
         "landing_attitude_limit": [

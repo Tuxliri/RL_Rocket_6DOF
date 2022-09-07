@@ -180,6 +180,7 @@ class Rocket6DOF(Env):
         """
 
         self.vtarg_history = []
+
         self.initial_condition = self.init_space.sample()
         self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])
         self.state = self.initial_condition
@@ -521,7 +522,7 @@ class Rocket6DOF(Env):
             * (1 - np.exp(-t_go / tau))
         )
 
-        self.vtarg_history.append(v_targ)
+        self.vtarg_history.append(np.concatenate((v_targ,[t_go])))
 
         return v_targ, t_go
 
@@ -541,7 +542,7 @@ class Rocket6DOF(Env):
     def vtarg_to_dataframe(self):
         import pandas as pd
 
-        return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z"])
+        return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z", "t_go"])
 
     def used_mass(self):
         initial_mass = self.SIM.states[0][-1]

@@ -472,17 +472,6 @@ class Rocket6DOF(Env):
         trajectory_dataframe = self.states_to_dataframe()
         return self._vtarg_plotly_figure(trajectory_dataframe)
 
-    def _plotly_fig2array(self, plotly_fig):
-        # convert Plotly fig to  an array
-        import io
-
-        from PIL import Image
-
-        fig_bytes = plotly_fig.to_image(format="png", width=800, height=800)
-        buf = io.BytesIO(fig_bytes)
-        img = Image.open(buf)
-        return np.asarray(img)
-
     def _normalize_obs(self, obs):
         return (obs / self.state_normalizer).astype("float32")
 

@@ -63,7 +63,9 @@ class EpisodeAnalyzer(gym.Wrapper):
     def step(self, action):
         obs, rew, done, info = super().step(action)
         
-        self.rewards_info.append(info["rewards_dict"])
+        sim_time = self.env.unwrapped.SIM.t
+
+        self.rewards_info.append({**info["rewards_dict"], 'time': sim_time})
 
         if done:
             fig = self.env.unwrapped.get_trajectory_plotly()
@@ -71,8 +73,6 @@ class EpisodeAnalyzer(gym.Wrapper):
             actions_dataframe = self.env.unwrapped.actions_to_dataframe()
             vtarg_dataframe = self.env.unwrapped.vtarg_to_dataframe()
             rewards_dataframe = pd.DataFrame(self.rewards_info)
-            fig_rew = rewards_dataframe.plot()
-            plt.close()
 
             names = self.env.unwrapped.state_names
             values = np.abs(states_dataframe.iloc[-1,:])
@@ -84,7 +84,7 @@ class EpisodeAnalyzer(gym.Wrapper):
                         "ep_history/states": states_dataframe.plot(),
                         "ep_history/actions": actions_dataframe.plot(),
                         "ep_history/vtarg": vtarg_dataframe.plot(),
-                        "ep_history/rewards": fig_rew,
+                        "ep_history/rewards": rewards_dataframe.drop('time',axis=1).plot(),
                         "plots3d/vtarg_trajectory": self.env.unwrapped.get_vtarg_plotly(),
                         "plots3d/trajectory": fig,
                         "ep_statistic/landing_success": info["rewards_dict"]["rew_goal"],
@@ -93,6 +93,9 @@ class EpisodeAnalyzer(gym.Wrapper):
                         "tables/actions": wandb.Table(dataframe=actions_dataframe),
                         "tables/vtarg": wandb.Table(dataframe=vtarg_dataframe),
                         "tables/rewards": wandb.Table(dataframe=rewards_dataframe),
+                        "my_custom_plot_id" : wandb.plot.line(wandb.Table(dataframe=rewards_dataframe), 
+                            x="time",y="velocity_tracking", title="Velocity error reward"),
+                            
                         **final_errors_dict
                     }
                 )

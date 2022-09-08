@@ -19,7 +19,7 @@ def make_env():
     kwargs = env_config
     env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
     env = TimeLimit(env, max_episode_steps=sb3_config["max_ep_timesteps"])
-    env = Monitor(env)    
+    env = Monitor(env,info_keywords=('is_succesful',))    
     
     return env
 

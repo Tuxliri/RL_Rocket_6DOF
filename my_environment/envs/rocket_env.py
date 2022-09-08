@@ -221,6 +221,7 @@ class Rocket6DOF(Env):
             "state_history": self.SIM.states,
             "action_history": self.SIM.actions,
             "timesteps": self.SIM.times,
+            "is_succesful": bool(rewards_dict["rew_goal"]),
         }
 
         info["bounds_violation"] = self._check_bounds_violation(state)

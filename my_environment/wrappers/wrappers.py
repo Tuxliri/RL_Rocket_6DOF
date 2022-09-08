@@ -70,7 +70,8 @@ class EpisodeAnalyzer(gym.Wrapper):
             states_dataframe = self.env.unwrapped.states_to_dataframe()
             actions_dataframe = self.env.unwrapped.actions_to_dataframe()
             vtarg_dataframe = self.env.unwrapped.vtarg_to_dataframe()
-            fig_rew = pd.DataFrame(self.rewards_info).plot()
+            rewards_dataframe = pd.DataFrame(self.rewards_info)
+            fig_rew = rewards_dataframe.plot()
             plt.close()
 
             names = self.env.unwrapped.state_names
@@ -88,6 +89,10 @@ class EpisodeAnalyzer(gym.Wrapper):
                         "plots3d/trajectory": fig,
                         "ep_statistic/landing_success": info["rewards_dict"]["rew_goal"],
                         "ep_statistic/used_mass" : states_dataframe.iloc[0,-1] - states_dataframe.iloc[-1,-1],
+                        "tables/states": wandb.Table(dataframe=states_dataframe),
+                        "tables/actions": wandb.Table(dataframe=actions_dataframe),
+                        "tables/vtarg": wandb.Table(dataframe=vtarg_dataframe),
+                        "tables/rewards": wandb.Table(dataframe=rewards_dataframe),
                         **final_errors_dict
                     }
                 )

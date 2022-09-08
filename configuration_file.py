@@ -44,7 +44,7 @@ env_config = {
     },
 }
 
-TOTAL_TIMESTEP = int(2e6)
+TOTAL_TIMESTEP = int(10e6)
 MAX_TIME = 150
 
 sb3_config = {
@@ -53,5 +53,5 @@ sb3_config = {
     "total_timesteps": TOTAL_TIMESTEP,
     "max_time": MAX_TIME,
     "max_ep_timesteps": int(MAX_TIME / env_config["timestep"]),
-    "eval_freq": int(TOTAL_TIMESTEP/20),
+    "eval_freq": min(int(TOTAL_TIMESTEP/20),50e3),
 }

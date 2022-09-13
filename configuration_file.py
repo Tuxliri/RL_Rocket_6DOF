@@ -44,7 +44,7 @@ env_config = {
     },
 }
 
-TOTAL_TIMESTEP = int(2e6)
+TOTAL_TIMESTEP = int(6e6)
 MAX_TIME = 150
 
 sb3_config = {

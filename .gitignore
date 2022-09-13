@@ -3,6 +3,8 @@ models/
 runs/
 videos/
 wandb/
+eval_videos/
+evaluation_logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

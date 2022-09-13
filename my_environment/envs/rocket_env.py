@@ -17,7 +17,7 @@ class Rocket6DOF(Env):
 
     """Simple environment simulating a 6DOF rocket"""
 
-    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 30}
+    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 1/0.1}
 
     def __init__(
         self,
@@ -245,10 +245,11 @@ class Rocket6DOF(Env):
 
             # Creating scene and loading the mesh
             self.plotter = pv.Plotter(args)
-            self._add_meshes_to_plotter()
+            self.plotter.show_axes()
+            # self.plotter.show_grid()
+            self._add_meshes_to_plotter(resetting=True)
 
             
-
             # Set desired camera position
             cpos = [
                 (2.e+03,  1.00e+01, -5.0e+03),  
@@ -263,43 +264,22 @@ class Rocket6DOF(Env):
                 # interactive_update=True,
             )
                 
-
-        # Move the rocket towards its new location
-        previous_loc = self.rocket_body_mesh.center
-        current_loc = self.state[0:3]
-
-        self.rocket_body_mesh.translate(current_loc - previous_loc, inplace=True)
-
-        # Rotate the rocket to the new attitude
-        step_rot_vector = self._get_step_rot_vec()
-        norm_step_rot = np.linalg.norm(step_rot_vector)  # This gives the rotation angle in [rad]
-
-        if norm_step_rot > 0:
-            self.rocket_body_mesh.rotate_vector(
-                vector=step_rot_vector / norm_step_rot,
-                angle=np.rad2deg(norm_step_rot),
-                inplace=True,
-                point=current_loc,
-            )
-
         # Redraw the thrust vector
-        self.plotter.remove_actor('thrust_vector')
+        self.plotter.remove_actor([
+            'thrust_vector',
+            "rocket_body"
+            ],
+            render=False
+            )
         
-        thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
-        arrow_kwargs = {'name': 'thrust_vector'}
-        
-        # self.plotter.add_arrows(
-        #     cent=thrust_vec_location,
-        #     direction=thrust_vector,
-        #     **arrow_kwargs
-        #     )
+        self._add_meshes_to_plotter()
 
         self.plotter.update()
 
         if mode == "rgb_array":
             return self.plotter.image
 
-    def _add_meshes_to_plotter(self):
+    def _add_meshes_to_plotter(self,resetting:bool = False):
         current_loc = self.state[0:3]
 
         self.rocket_body_mesh = pv.Cylinder(
@@ -311,27 +291,19 @@ class Rocket6DOF(Env):
 
         self.landing_pad_mesh = pv.Circle(radius=self.target_r)
         self.landing_pad_mesh.rotate_y(angle=90)
-        # current_vel=self.state[3:6]
 
-        # self.velocity_mesh = pv.Arrow(
-        #         start=current_loc,
-        #         direction=current_vel,
-        #         # scale='auto'
-        #         )
         thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
         arrow_kwargs = {'name': 'thrust_vector'}
 
-        self.plotter.add_arrows(
-            cent=thrust_vec_location,
-            direction=thrust_vector,
-            **arrow_kwargs
-            )
+        # self.plotter.add_arrows(
+        #     cent=thrust_vec_location,
+        #     direction=thrust_vector,
+        #     **arrow_kwargs
+        #     )
 
-        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="orange")
-        self.plotter.add_mesh(self.landing_pad_mesh,color="red")
-
-        self.plotter.show_axes_all()
-        self.plotter.show_grid()
+        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="orange",name="rocket_body")
+        if resetting is True: 
+            self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")
 
     def close(self) -> None:
         super().close()
@@ -358,7 +330,6 @@ class Rocket6DOF(Env):
             "thrust_penalty": coeff["beta"] * thrust,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
-            # "attitude_hint" : coeff["delta"]*np.maximum(0,abs(zeta)-zeta_mgn),
             "rew_goal": self._reward_goal(state),
         }
 

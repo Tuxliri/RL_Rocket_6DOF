@@ -9,6 +9,13 @@ from gym.wrappers import RecordVideo
 from configuration_file import env_config
 from gym.wrappers import RecordVideo
 
+import pandas as pd
+
+pd.options.plotting.backend = "plotly"
+
+from stable_baselines3.ppo.ppo import PPO
+
+
 # Instantiate the environment
 kwargs = env_config
 env = Rocket6DOF(**kwargs)
@@ -19,16 +26,22 @@ env = Rocket6DOF(**kwargs)
 null_action = [0.0, 0.0, -1]
 non_null_action = [1.0, 1.0, -0.5]
 
+
 # Initialize the environment
 done = False
 obs = env.reset()
 env.render(mode="human")
 
-while not done:
+while True:
     obs, rew, done, info = env.step(null_action)
     env.render(mode="human")
+    if done:
+        env.reset()
+        env.render(mode="human")
 
-fig = env.get_trajectory_plotly()
+vtarg_dataframe = env.vtarg_to_dataframe()
+# fig = env.get_trajectory_plotly()
+fig = vtarg_dataframe.plot()
 env.close()
 
 fig.show()

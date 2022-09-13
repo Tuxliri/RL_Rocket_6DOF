@@ -11,6 +11,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 
 from my_environment.wrappers import EpisodeAnalyzer, RewardAnnealing
 from wandb.integration.sb3 import WandbCallback
@@ -63,7 +64,10 @@ def start_training():
         save_code=True,  # optional
     )   
 
-    env = make_env()
+    env = VecNormalize(
+        DummyVecEnv([make_env]),
+        norm_obs=False,
+        )
 
     model = PPO(
         sb3_config["policy_type"],
@@ -74,7 +78,10 @@ def start_training():
         ent_coef=0.01,
         )
     
-    eval_env = DummyVecEnv([make_eval_env])
+    eval_env =  VecNormalize(
+        DummyVecEnv([make_eval_env]),
+        norm_obs=False,
+        )
 
     callbacksList = [
         EvalCallback(

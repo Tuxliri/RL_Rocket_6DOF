@@ -34,12 +34,12 @@ class Rocket6DOF(Env):
             "kappa": 10,
             "xi": 0.004,
         },
-        trajectory_limits={"attitude_limit": [1.5, 1.5, 2 * np.pi]},
+        trajectory_limits={"attitude_limit": [85, 85, 360]},
         landing_params={
             "waypoint": 50,
             "landing_radius": 30,
             "maximum_velocity": 10,
-            "landing_attitude_limit": [0.2, 0.2, 2 * np.pi],  # [Yaw, Pitch, Roll],
+            "landing_attitude_limit": [10 , 10, 360,],  # [Yaw, Pitch, Roll],
             "omega_lim": [0.2, 0.2, 0.2],
         },
     ) -> None:
@@ -155,13 +155,13 @@ class Rocket6DOF(Env):
         self.vtarg_history = []
 
         # Trajectory constratints
-        self.attitude_traj_limit = trajectory_limits["attitude_limit"]
+        self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
 
         # Landing parameters
         self.target_r = landing_params["landing_radius"]
         self.maximum_v = landing_params["maximum_velocity"]
         self.landing_target = [0, 0, 0]
-        self.landing_attitude_limit = landing_params["landing_attitude_limit"]
+        self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
 
         # self.q_lim = raise NotImplementedError
         self.omega_lim = np.array([0.2, 0.2, 0.2])

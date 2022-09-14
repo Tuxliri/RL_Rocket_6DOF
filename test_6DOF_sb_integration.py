@@ -8,7 +8,13 @@ from gym.wrappers import RecordVideo
 from stable_baselines3.common.env_checker import check_env
     
 # Import the initial conditions from the setup file
-from configuration_file import env_config
+import yaml
+from yaml.loader import SafeLoader
+
+with open("config.yaml") as f:
+    config=yaml.load(f,Loader=SafeLoader)
+    sb3_config = config["sb3_config"]
+    env_config = config["env_config"]
 
 kwargs = env_config
 

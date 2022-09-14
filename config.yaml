@@ -1,0 +1,59 @@
+env_config:
+  timestep: 0.1
+  seed: 42
+  IC:
+    - 2000
+    - -1600
+    - 300
+    - -50
+    - 180
+    - 0
+    - 0.8660254
+    - 0
+    - 0
+    - -0.5
+    - 0
+    - 0
+    - 0
+    - 45e3
+  ICRange:
+    - 50
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 1e3
+  reward_coeff: 
+    alfa: -0.0025
+    beta: 0 #*-1e-7
+    delta: -5
+    eta: 0.01
+    gamma: -10
+    kappa: 10
+    xi: 0.004
+  trajectory_limits: 
+    attitude_limit: [85, 85, 360]
+    landing_params: 
+      waypoint: 100
+      landing_radius: 50
+      maximum_velocity: 10
+      landing_attitude_limit: [10 , 10, 360,]
+      # [Yaw, Pitch, Roll] in DEG,
+      # rotations order zyx
+      # VISUALIZATION:
+      # https://bit.ly/3CoEdvH
+      omega_lim: [0.2, 0.2, 0.2]      
+
+sb3_config: 
+    env_id: "my_environment/Falcon6DOF-v0"
+    policy_type: "MlpPolicy"
+    total_timesteps: 1.0E+2
+    max_time: 150

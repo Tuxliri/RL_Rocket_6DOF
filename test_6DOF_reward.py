@@ -5,8 +5,14 @@ from my_environment.envs import Rocket6DOF
 from gym.utils.play import play, PlayPlot
 
 # Import the initial conditions from the setup file
-from configuration_file import env_config
+import yaml
+from yaml.loader import SafeLoader
 
+with open("config.yaml") as f:
+    config=yaml.load(f,Loader=SafeLoader)
+    sb3_config = config["sb3_config"]
+    env_config = config["env_config"]
+    
 # Instantiate the environment
 kwargs = env_config
 env = Rocket6DOF(**kwargs)

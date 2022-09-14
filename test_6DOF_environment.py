@@ -6,7 +6,6 @@ from my_environment.envs import Rocket6DOF
 from gym.wrappers import RecordVideo
 
 # Import the initial conditions from the setup file
-from configuration_file import env_config
 from gym.wrappers import RecordVideo
 
 import pandas as pd
@@ -15,6 +14,13 @@ pd.options.plotting.backend = "plotly"
 
 from stable_baselines3.ppo.ppo import PPO
 
+import yaml
+from yaml.loader import SafeLoader
+
+with open("config.yaml") as f:
+    config=yaml.load(f,Loader=SafeLoader)
+    sb3_config = config["sb3_config"]
+    env_config = config["env_config"]
 
 # Instantiate the environment
 kwargs = env_config

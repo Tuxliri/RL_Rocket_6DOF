@@ -5,7 +5,6 @@ import gym
 import wandb
 
 from gym.wrappers import TimeLimit, RecordVideo
-from configuration_file import env_config, sb3_config
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
@@ -16,10 +15,23 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from my_environment.wrappers import EpisodeAnalyzer, RewardAnnealing
 from wandb.integration.sb3 import WandbCallback
 
+import yaml
+from yaml.loader import SafeLoader
+
+with open("config.yaml") as f:
+    config=yaml.load(f,Loader=SafeLoader)
+    sb3_config = config["sb3_config"]
+    env_config = config["env_config"]
+
+MAX_EPISODE_STEPS = int(sb3_config["max_time"]/env_config["timestep"])
+
 def make_env():
     kwargs = env_config
     env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-    env = TimeLimit(env, max_episode_steps=sb3_config["max_ep_timesteps"])
+    env = TimeLimit(
+        env,
+        max_episode_steps=MAX_EPISODE_STEPS
+    )
     env = Monitor(env,info_keywords=('is_succesful',))    
     
     return env
@@ -31,7 +43,7 @@ def make_annealed_env():
     # ADD REWARD ANNEALING
     env = RewardAnnealing(env)
 
-    env = TimeLimit(env, max_episode_steps=sb3_config["max_ep_timesteps"])
+    env = TimeLimit(env, max_episode_steps=MAX_EPISODE_STEPS)
     env = Monitor(env)    
     
     return env
@@ -39,14 +51,13 @@ def make_annealed_env():
 def make_eval_env():
         kwargs = env_config
         training_env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-        training_env = TimeLimit(training_env, max_episode_steps=sb3_config["max_ep_timesteps"])
+        training_env = TimeLimit(training_env, max_episode_steps=MAX_EPISODE_STEPS)
         return Monitor(RecordVideo(
             EpisodeAnalyzer(training_env),
             video_folder='eval_videos',
             episode_trigger= lambda x : x%5==0
-            ))
-        # return EpisodeAnalyzer6DOF(training_env,video_folder=f"videos_6DOF/{run.id}",
-            # episode_trigger=lambda x: x%5==0)
+            )
+            )
 
 def start_training():
 
@@ -86,7 +97,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq = sb3_config["eval_freq"],
+            eval_freq =  min(int(sb3_config["total_timesteps"]/20),50e3),
             n_eval_episodes = 5,
             render=False,
             deterministic=True,

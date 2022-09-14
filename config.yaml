@@ -41,16 +41,16 @@ env_config:
     xi: 0.004
   trajectory_limits: 
     attitude_limit: [85, 85, 360]
-    landing_params: 
-      waypoint: 100
-      landing_radius: 50
-      maximum_velocity: 10
-      landing_attitude_limit: [10 , 10, 360,]
-      # [Yaw, Pitch, Roll] in DEG,
-      # rotations order zyx
-      # VISUALIZATION:
-      # https://bit.ly/3CoEdvH
-      omega_lim: [0.2, 0.2, 0.2]      
+  landing_params: 
+    waypoint: -1
+    landing_radius: 50
+    maximum_velocity: 10
+    landing_attitude_limit: [10 , 10, 360,]
+    # [Yaw, Pitch, Roll] in DEG,
+    # rotations order zyx
+    # VISUALIZATION:
+    # https://bit.ly/3CoEdvH
+    omega_lim: [0.2, 0.2, 0.2]      
 
 sb3_config: 
     env_id: "my_environment/Falcon6DOF-v0"

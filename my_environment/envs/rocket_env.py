@@ -222,6 +222,7 @@ class Rocket6DOF(Env):
             "action_history": self.SIM.actions,
             "timesteps": self.SIM.times,
             "is_succesful": bool(rewards_dict["rew_goal"]),
+            "landing_conditions": self._check_landing(self.state)
         }
 
         info["bounds_violation"] = self._check_bounds_violation(state)
@@ -340,9 +341,9 @@ class Rocket6DOF(Env):
         attitude_euler_angles = self.rotation_obj.as_euler("zyx")
         return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit)
 
-    def _reward_goal(self, obs):
+    def _reward_goal(self, state):
         k = self.reward_coefficients["kappa"]
-        return k * self._check_landing(obs)
+        return k * all(self._check_landing(state).values())
 
     def get_trajectory_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
@@ -546,7 +547,7 @@ class Rocket6DOF(Env):
             "omega_limit": np.any(abs(omega) < self.omega_lim),
         }
 
-        return all(landing_conditions.values())
+        return landing_conditions
 
     def seed(self, seed: int = 42):
         self.init_space.seed(seed)
@@ -554,11 +555,6 @@ class Rocket6DOF(Env):
 
     def _get_normalizer(self):
         return self.state_normalizer
-
-    def _rotate_x_to_z(self, vector: ArrayLike):
-        ROT_MAT = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
-
-        return ROT_MAT @ vector
 
     def _scipy_quat_convention(self, leading_scalar_quaternion):
         # return TRAILING SCALAR CONVENTION

@@ -149,7 +149,6 @@ class Rocket6DOF(Env):
         self.state = None
         self.infos = []
         self.SIM: Simulator6DOF = None
-        self.prev_rotation_obj: R = None
         self.rotation_obj: R = None
         self.action = np.array([0.0, 0.0, 0.0])
         self.vtarg_history = []
@@ -192,8 +191,7 @@ class Rocket6DOF(Env):
         
 
         self.rotation_obj = R.from_quat(self._scipy_quat_convention(self.state[6:10]))
-        if self.prev_rotation_obj is None:
-            self.prev_rotation_obj = self.rotation_obj
+       
         # instantiate the simulator object
         self.SIM = Simulator6DOF(self.initial_condition, self.timestep)
 
@@ -559,14 +557,6 @@ class Rocket6DOF(Env):
     def _scipy_quat_convention(self, leading_scalar_quaternion):
         # return TRAILING SCALAR CONVENTION
         return np.roll(leading_scalar_quaternion, -1)
-
-    def _get_step_rot_vec(self) -> np.ndarray:
-        """
-        Compute the incremental rotation vector
-        by which to rotate the body at each time step
-        """
-        step_rotation = self.rotation_obj * self.prev_rotation_obj.inv()
-        return step_rotation.as_rotvec()
 
     def get_keys_to_action(self):
         import pygame

@@ -401,7 +401,7 @@ class Rocket6DOF(Env):
         )
         return fig
 
-    def _vtarg_plotly_figure(self, trajectory_df: DataFrame):
+    def _vtarg_error_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
         
         # Create vtarg dataframe
@@ -416,17 +416,19 @@ class Rocket6DOF(Env):
 
         # Get a subset of the trajectory dataframe
         index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-2),num=30).astype(int)
-        reduced_trajectory_df = trajectory_df.iloc[index_list]
-        reduced_vtarg_df = vtarg_df.iloc[index_list]
+        downsampled_traj = trajectory_df.iloc[index_list]
+        downsampled_vtarg = vtarg_df.iloc[index_list]
+
+        v_err = downsampled_traj[['vx','vy','vz']]-downsampled_vtarg[['vx','vy','vz']]
 
         fig.add_cone(
-            x=reduced_trajectory_df["x"],
-            y=reduced_trajectory_df["y"],
-            z=reduced_trajectory_df["z"],
-            u=reduced_vtarg_df["v_x"],
-            v=reduced_vtarg_df["v_y"],
-            w=reduced_vtarg_df["v_z"],
-            sizeref=3,
+            x=downsampled_traj["x"],
+            y=downsampled_traj["y"],
+            z=downsampled_traj["z"],
+            u=v_err['vx'],
+            v=v_err['vy'],
+            w=v_err['vz'],
+            sizeref=8
         )
 
         fig.update_layout(
@@ -443,7 +445,7 @@ class Rocket6DOF(Env):
 
     def get_vtarg_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
-        return self._vtarg_plotly_figure(trajectory_dataframe)
+        return self._vtarg_error_figure(trajectory_dataframe)
 
     def _normalize_obs(self, obs):
         return (obs / self.state_normalizer).astype("float32")
@@ -514,7 +516,7 @@ class Rocket6DOF(Env):
     def vtarg_to_dataframe(self):
         import pandas as pd
 
-        return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z", "t_go"])
+        return pd.DataFrame(self.vtarg_history, columns=["vx", "vy", "vz", "t_go"])
 
     def used_mass(self):
         initial_mass = self.SIM.states[0][-1]

@@ -37,15 +37,22 @@ done = False
 obs = env.reset()
 env.render(mode="human")
 
-while not done:
+landing_attempts = 1
+succesful_landings = 0
+
+while landing_attempts <= 10:
     action, __, = model.predict(obs)
     obs, rew, done, info = env.step(action)
     env.render(mode="human")
+    
     if done:
-        fig = env.get_vtarg_plotly()
+        landing_attempts += 1
+        if info['is_succesful'] is True:
+            succesful_landings +=1
+        print(info["landing_conditions"])
         env.reset()
         env.render(mode="human")
 
-fig.show()
+print(f"The success rate is:{succesful_landings/landing_attempts*100}%")
 
 env.close()

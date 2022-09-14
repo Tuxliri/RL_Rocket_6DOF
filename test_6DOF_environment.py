@@ -46,8 +46,6 @@ while not done:
         env.reset()
         env.render(mode="human")
 
-vtarg_dataframe = env.vtarg_to_dataframe()
-
 fig.show()
 
 env.close()

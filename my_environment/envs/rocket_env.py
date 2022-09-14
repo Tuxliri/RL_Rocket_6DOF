@@ -246,18 +246,16 @@ class Rocket6DOF(Env):
             # Creating scene and loading the mesh
             self.plotter = pv.Plotter(args)
             self.plotter.show_axes()
-            # self.plotter.show_grid()
             self._add_meshes_to_plotter(resetting=True)
 
             
             # Set desired camera position
-            cpos = [
-                (2.e+03,  1.00e+01, -5.0e+03),  
-                (1.e+03, -1.00e+02, 4.5e+02),  
+            self.plotter.camera_position = [
+                (2.e+03,  1.e+01, -5.e+03),  
+                (1.e+03, -1.e+02, 4.5e+02),  
                 (1, 0, 0)
                 ]
-
-            self.plotter.camera_position = cpos
+                
             self.plotter.show(
                 auto_close=False,
                 interactive=False,
@@ -300,7 +298,7 @@ class Rocket6DOF(Env):
         #     direction=thrust_vector,
         #     **arrow_kwargs
         #     )
-
+        
         self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="orange",name="rocket_body")
         if resetting is True: 
             self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")

@@ -1,8 +1,8 @@
 __all__ = ["Rocket6DOF"]
 
 # This is the gym environment to test the RL algorithms
-# on the rocket landing control problem. It is a simplified
-# 3DOF version of the real 6DOF dynamics
+# on the rocket landing control problem. It is the real 
+# 6DOF dynamics
 
 import numpy as np
 import pyvista as pv
@@ -276,7 +276,7 @@ class Rocket6DOF(Env):
         if mode == "rgb_array":
             return self.plotter.image
 
-    def _add_meshes_to_plotter(self,resetting:bool = False):
+    def _add_meshes_to_plotter(self, resetting:bool = False):
         current_loc = self.state[0:3]
 
         self.rocket_body_mesh = pv.Cylinder(
@@ -298,9 +298,13 @@ class Rocket6DOF(Env):
         #     **arrow_kwargs
         #     )
         
-        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="orange",name="rocket_body")
+        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="#c8f7c5",name="rocket_body")
         if resetting is True: 
             self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")
+
+        if all(self._check_landing(self.state).values()):
+            # Turn landing pad green in case of succesfull landing
+            self.plotter.add_mesh(self.landing_pad_mesh,color="#00ff00",name="landing_pad")
 
     def close(self) -> None:
         super().close()

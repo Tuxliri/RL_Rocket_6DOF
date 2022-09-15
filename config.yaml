@@ -4,7 +4,7 @@ env_config:
   IC:
     - 2000  # x
     - -1600 # y
-    - 300   # z
+    - 0   # z
     - -50   # vx
     - 180   # vy
     - 0     # vz
@@ -55,5 +55,5 @@ env_config:
 sb3_config: 
     env_id: "my_environment/Falcon6DOF-v0"
     policy_type: "MlpPolicy"
-    total_timesteps: 1.0E+2
+    total_timesteps: 2.0E+6
     max_time: 150

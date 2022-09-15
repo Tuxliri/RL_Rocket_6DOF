@@ -299,12 +299,13 @@ class Rocket6DOF(Env):
         #     )
         
         self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="#c8f7c5",name="rocket_body")
-        if resetting is True: 
+        
+        # Turn landing pad green in case of succesfull landing
+        if all(self._check_landing(self.state).values()):  
+            self.plotter.add_mesh(self.landing_pad_mesh,color="#00ff00",name="landing_pad")
+        else:
             self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")
 
-        if all(self._check_landing(self.state).values()):
-            # Turn landing pad green in case of succesfull landing
-            self.plotter.add_mesh(self.landing_pad_mesh,color="#00ff00",name="landing_pad")
 
     def close(self) -> None:
         super().close()

@@ -84,7 +84,7 @@ class Simulator6DOF():
         self.states.append(self.state)
         self.actions.append(u)
 
-        return self.state, solution.status, self.t
+        return self.state, solution.status, self.RHS(self.t, self.state, u)
 
     def RHS(self, t, state, u):
         """ 

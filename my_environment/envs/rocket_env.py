@@ -446,7 +446,7 @@ class Rocket6DOF(Env):
 
     def get_atarg_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
-        return self._atarg_error_figure(trajectory_dataframe)
+        return self._atarg_figure(trajectory_dataframe)
 
     def _normalize_obs(self, obs):
         return (obs / self.state_normalizer).astype("float32")

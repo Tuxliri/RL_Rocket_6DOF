@@ -66,10 +66,10 @@ def start_training():
     if not have_display:
         from pyvista.utilities.xvfb import start_xvfb
         start_xvfb()
-        
+
     run = wandb.init(
         config={**env_config, **sb3_config},
-        project='RL_rocket_6DOF',
+        project='RL_rocket_6DOF' if sb3_config["total_timesteps"]>1e5 else 'test_runs',
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=True,  # auto-upload the videos of agents playing the game
         save_code=True,  # optional

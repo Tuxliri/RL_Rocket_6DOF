@@ -27,6 +27,7 @@ class GaudetStateObs(gym.ObservationWrapper): #TODO: adapt to 6DOF environment
         r = np.array([x, y])
         v = np.array([vx, vy])
 
+        # TODO: deprecate as in this branch we use atarg
         v_targ, t_go = self.env.unwrapped.compute_vtarg(r, v)
         vx_targ, vy_targ = v_targ
 
@@ -71,7 +72,7 @@ class EpisodeAnalyzer(gym.Wrapper):
             fig = self.env.unwrapped.get_trajectory_plotly()
             states_dataframe = self.env.unwrapped.states_to_dataframe()
             actions_dataframe = self.env.unwrapped.actions_to_dataframe()
-            vtarg_dataframe = self.env.unwrapped.vtarg_to_dataframe()
+            atarg_dataframe = self.env.unwrapped.atarg_to_dataframe()
             rewards_dataframe = pd.DataFrame(self.rewards_info)
 
             names = self.env.unwrapped.state_names
@@ -83,15 +84,15 @@ class EpisodeAnalyzer(gym.Wrapper):
                     {
                         "ep_history/states": states_dataframe.plot(),
                         "ep_history/actions": actions_dataframe.plot(),
-                        "ep_history/vtarg": vtarg_dataframe.plot(),
+                        "ep_history/atarg": atarg_dataframe.plot(),
                         "ep_history/rewards": rewards_dataframe.drop('time',axis=1).plot(),
-                        "plots3d/vtarg_trajectory": self.env.unwrapped.get_vtarg_plotly(),
+                        "plots3d/atarg_trajectory": self.env.unwrapped.get_atarg_plotly(),
                         "plots3d/trajectory": fig,
                         "ep_statistic/landing_success": info["rewards_dict"]["rew_goal"],
                         "ep_statistic/used_mass" : states_dataframe.iloc[0,-1] - states_dataframe.iloc[-1,-1],
                         "tables/states": wandb.Table(dataframe=states_dataframe),
                         "tables/actions": wandb.Table(dataframe=actions_dataframe),
-                        "tables/vtarg": wandb.Table(dataframe=vtarg_dataframe),
+                        "tables/atarg": wandb.Table(dataframe=atarg_dataframe),
                         "tables/rewards": wandb.Table(dataframe=rewards_dataframe),
                         "my_custom_plot_id" : wandb.plot.line(wandb.Table(dataframe=rewards_dataframe), 
                             x="time",y="velocity_tracking", title="Velocity error reward"),

@@ -151,7 +151,7 @@ class Rocket6DOF(Env):
         self.SIM: Simulator6DOF = None
         self.rotation_obj: R = None
         self.action = np.array([0.0, 0.0, 0.0])
-        self.vtarg_history = []
+        self.atarg_history = []
 
         # Trajectory constratints
         self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
@@ -178,7 +178,7 @@ class Rocket6DOF(Env):
         from the uniform distribution of the ICs
         """
 
-        self.vtarg_history = []
+        self.atarg_history = []
 
         self.initial_condition = self.init_space.sample()
         self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])
@@ -201,7 +201,7 @@ class Rocket6DOF(Env):
 
         self.action = self._denormalize_action(normalized_action)
 
-        self.state, isterminal, __ = self.SIM.step(self.action)
+        self.state, isterminal, state_derivatives = self.SIM.step(self.action)
         state = self.state.astype(np.float32)
 
         # Create a rotation object representing the attitude of the system
@@ -211,7 +211,7 @@ class Rocket6DOF(Env):
         # Done if the rocket is at ground or outside bounds
         done = bool(isterminal) or self._check_bounds_violation(state)
 
-        reward, rewards_dict = self._compute_reward(state, self.action)
+        reward, rewards_dict = self._compute_reward(state, self.action, state_derivatives)
 
         info = {
             "rewards_dict": rewards_dict,
@@ -313,13 +313,14 @@ class Rocket6DOF(Env):
         pv.close_all()
         return None
 
-    def _compute_reward(self, state, action):
+    def _compute_reward(self, state, action, state_derivatives):
         reward = 0
 
         r = state[0:3]
         v = state[3:6]
+        a = state_derivatives[3:6]
 
-        v_targ, __ = self._compute_vtarg(r, v)
+        a_targ, __ = self.get_atarg(r, v)
 
         thrust = action[2]
 
@@ -328,7 +329,7 @@ class Rocket6DOF(Env):
 
         # Compute each reward term
         rewards_dict = {
-            "velocity_tracking": coeff["alfa"] * np.linalg.norm(v - v_targ),
+            "velocity_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
             "thrust_penalty": coeff["beta"] * thrust,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
@@ -403,11 +404,11 @@ class Rocket6DOF(Env):
         )
         return fig
 
-    def _vtarg_error_figure(self, trajectory_df: DataFrame):
+    def _atarg_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
         
-        # Create vtarg dataframe
-        vtarg_df = self.vtarg_to_dataframe()
+        # Create atarg dataframe
+        atarg_df = self.atarg_to_dataframe()
 
         fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z",)
 
@@ -419,17 +420,15 @@ class Rocket6DOF(Env):
         # Get a subset of the trajectory dataframe
         index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-2),num=30).astype(int)
         downsampled_traj = trajectory_df.iloc[index_list]
-        downsampled_vtarg = vtarg_df.iloc[index_list]
-
-        v_err = downsampled_traj[['vx','vy','vz']]-downsampled_vtarg[['vx','vy','vz']]
+        downsampled_atarg = atarg_df.iloc[index_list]
 
         fig.add_cone(
             x=downsampled_traj["x"],
             y=downsampled_traj["y"],
             z=downsampled_traj["z"],
-            u=v_err['vx'],
-            v=v_err['vy'],
-            w=v_err['vz'],
+            u=downsampled_atarg['ax'],
+            v=downsampled_atarg['ay'],
+            w=downsampled_atarg['az'],
             sizeref=8
         )
 
@@ -445,9 +444,9 @@ class Rocket6DOF(Env):
 
         return fig
 
-    def get_vtarg_plotly(self):
+    def get_atarg_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
-        return self._vtarg_error_figure(trajectory_dataframe)
+        return self._atarg_error_figure(trajectory_dataframe)
 
     def _normalize_obs(self, obs):
         return (obs / self.state_normalizer).astype("float32")
@@ -472,39 +471,43 @@ class Rocket6DOF(Env):
     def _get_obs(self):
         return self._normalize_obs(self.state)
 
-    def _compute_vtarg(self, r, v):
-        tau_1 = 20
-        tau_2 = 100
-        initial_conditions = self.SIM.states[0]
-
-        v_0 = np.linalg.norm(initial_conditions[3:6])
-
-        rx = r[0]
-
-        if rx > self.waypoint:
-            r_hat = r - [self.waypoint, 0, 0]
-            v_hat = v - [-2, 0, 0]
-            tau = tau_1
-
-        else:
-            r_hat = [rx + 1, 0, 0]
-            v_hat = v - [-1, 0, 0]
-            tau = tau_2
-
-        t_go = np.linalg.norm(r_hat) / np.linalg.norm(v_hat)
-        v_targ = (
-            -v_0
-            * (np.array(r_hat) / max(1e-3, np.linalg.norm(r_hat)))
-            * (1 - np.exp(-t_go / tau))
-        )
-
-        self.vtarg_history.append(np.concatenate((v_targ,[t_go])))
-
-        return v_targ, t_go
-
-    def get_vtarg(self,r,v):
-        return self._compute_vtarg(r,v)
+    def _compute_atarg(self,r,v):
         
+        def __compute_t_go(r,v) -> float:
+            # In order to compute the t_go the following depressed
+            # quartic equation has to be solved:
+            # $g^2t_{go}^4-4||\mathbf{v}||^2t_{go}^2-24\mathbf{r}^t\mathbf{v}t_{go}-36||\mathbf{r}||^2=0
+
+            solutions = np.roots([
+                g[0]**2,
+                0,
+                -4*np.linalg.norm(v)**2,
+                -24*np.dot(r,v),
+                -36*np.linalg.norm(r)**2,
+                ])
+
+            real_positive_roots = [n for n in solutions if (n.imag == 0 and n.real>0)][0].real
+
+            # Check that we have only one real solution
+            #assert len(real_positive_roots) == 1, 'Multiple real solutions to t_go equation'
+
+            return real_positive_roots
+
+        g = [-9.81,0,0] # Gravitational vector
+
+        # Determine the time to go
+        t_go = __compute_t_go(r,v)
+
+        # Compute the optimal target velocity
+        a_targ = -6*r/t_go**2 - 4*v/t_go - g
+
+        self.atarg_history.append(np.concatenate((a_targ,[t_go])))
+
+        return a_targ, t_go
+
+    def get_atarg(self,r,v):
+        return self._compute_atarg(r,v)
+
     def states_to_dataframe(self):
         import pandas as pd
 
@@ -515,10 +518,10 @@ class Rocket6DOF(Env):
 
         return pd.DataFrame(self.SIM.actions, columns=self.action_names)
 
-    def vtarg_to_dataframe(self):
+    def atarg_to_dataframe(self):
         import pandas as pd
 
-        return pd.DataFrame(self.vtarg_history, columns=["vx", "vy", "vz", "t_go"])
+        return pd.DataFrame(self.atarg_history, columns=["ax", "ay", "az", "t_go"])
 
     def used_mass(self):
         initial_mass = self.SIM.states[0][-1]

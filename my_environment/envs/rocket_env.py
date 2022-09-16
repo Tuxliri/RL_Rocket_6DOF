@@ -318,7 +318,10 @@ class Rocket6DOF(Env):
 
         r = state[0:3]
         v = state[3:6]
-        a = state_derivatives[3:6]
+        m = state[-1]
+
+        thrust_vec = self.SIM.get_thrust_vector_inertial()
+        a = thrust_vec/m
 
         a_targ, __ = self.get_atarg(r, v)
 
@@ -329,7 +332,7 @@ class Rocket6DOF(Env):
 
         # Compute each reward term
         rewards_dict = {
-            "velocity_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
+            "acceleration_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
             "thrust_penalty": coeff["beta"] * thrust,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),

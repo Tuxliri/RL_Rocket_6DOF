@@ -161,7 +161,7 @@ class Simulator6DOF():
         T_inertial_frame = R_B_to_I.dot(T_body_frame)
 
         # Get the hinge point of the thrust vector
-        r_thrust_inertial_frame = R_B_to_I.dot(2*np.array(self.r_T_B))+current_state[0:3]
+        r_thrust_inertial_frame = R_B_to_I.dot(np.array(self.r_T_B))+current_state[0:3]
 
         return T_inertial_frame, r_thrust_inertial_frame
 

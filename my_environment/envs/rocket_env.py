@@ -162,7 +162,6 @@ class Rocket6DOF(Env):
         self.landing_target = [0, 0, 0]
         self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
 
-        # self.q_lim = raise NotImplementedError
         self.omega_lim = np.array([0.2, 0.2, 0.2])
 
         self.waypoint = landing_params["waypoint"]
@@ -323,7 +322,7 @@ class Rocket6DOF(Env):
         thrust_vec = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
-        a_targ, __ = self.get_atarg(r, v)
+        a_targ, t_go = self.get_atarg(r, v)
 
         thrust = action[2]
 
@@ -500,9 +499,17 @@ class Rocket6DOF(Env):
 
         # Determine the time to go
         t_go = __compute_t_go(r,v)
+    
+        def saturation(q,U) -> np.ndarray:
+            # Saturation function of vector q w.r.t magnitude U
+            q_norm = np.linalg.norm(q)
+            if q_norm<=U:
+                return q
+            else:
+                return q*U/q_norm
 
         # Compute the optimal target velocity
-        a_targ = -6*r/t_go**2 - 4*v/t_go - g
+        a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g)
 
         self.atarg_history.append(np.concatenate((a_targ,[t_go])))
 

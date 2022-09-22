@@ -508,7 +508,7 @@ class Rocket6DOF(Env):
             else:
                 return q*U/q_norm
 
-        # Compute the optimal target velocity
+        # Compute the saturated optimal target acceleration
         a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g)
 
         self.atarg_history.append(np.concatenate((a_targ,[t_go])))

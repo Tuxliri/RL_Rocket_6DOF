@@ -218,8 +218,7 @@ class Rocket6DOF(Env):
             "state_history": self.SIM.states,
             "action_history": self.SIM.actions,
             "timesteps": self.SIM.times,
-            "is_succesful": bool(rewards_dict["rew_goal"]),
-            "landing_conditions": self._check_landing(self.state)
+            **rewards_dict,
         }
 
         info["bounds_violation"] = self._check_bounds_violation(state)
@@ -322,20 +321,21 @@ class Rocket6DOF(Env):
         thrust_vec = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
-        a_targ, t_go = self.get_atarg(r, v)
+        a_targ, t_go = self.get_atarg(r,v,m)
 
         thrust = action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
 
+        
         # Compute each reward term
         rewards_dict = {
             "acceleration_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
             "thrust_penalty": coeff["beta"] * thrust,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
-            "rew_goal": self._reward_goal(state),
+            **self._reward_goal(state),
         }
 
         reward = sum(rewards_dict.values())
@@ -348,8 +348,40 @@ class Rocket6DOF(Env):
         return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit)
 
     def _reward_goal(self, state):
-        k = self.reward_coefficients["kappa"]
-        return k * all(self._check_landing(state).values())
+        
+        r = np.linalg.norm(state[0:3])
+        v = np.linalg.norm(state[3:6])
+        q = state[6:10]
+        omega = state[10:13]
+
+        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
+
+        assert q.shape == (4,), omega.shape == (3,)
+
+        landing_conditions = {
+            "zero_height": state[0] <= 1e-3,
+            "velocity_limit": v < self.maximum_v,
+            "landing_radius": r < self.target_r,
+            "attitude_limit": np.any(
+                abs(attitude_euler_angles) < self.landing_attitude_limit
+            ),
+            "omega_limit": np.any(abs(omega) < self.omega_lim),
+        }
+
+        
+        final_rewards = [0, 0]
+        k, w_r_f, w_v_f, max_r_f, max_v_f= list(
+            map(self.reward_coefficients.get,["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
+            )
+        
+        if landing_conditions["zero_height"]:
+            final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
+
+        return {
+            'all_conditions': k*all(landing_conditions.values()),
+            'final_position': final_rewards[0],
+            'final_velocity': final_rewards[1],
+        }
 
     def get_trajectory_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
@@ -473,7 +505,7 @@ class Rocket6DOF(Env):
     def _get_obs(self):
         return self._normalize_obs(self.state)
 
-    def _compute_atarg(self,r,v):
+    def _compute_atarg(self,r,v,mass):
         
         def __compute_t_go(r,v) -> float:
             # In order to compute the t_go the following depressed
@@ -509,14 +541,14 @@ class Rocket6DOF(Env):
                 return q*U/q_norm
 
         # Compute the saturated optimal target acceleration
-        a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g)
+        a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g,self.max_thrust/mass)
 
         self.atarg_history.append(np.concatenate((a_targ,[t_go])))
 
         return a_targ, t_go
 
-    def get_atarg(self,r,v):
-        return self._compute_atarg(r,v)
+    def get_atarg(self,r,v,m):
+        return self._compute_atarg(r,v,m)
 
     def states_to_dataframe(self):
         import pandas as pd
@@ -542,6 +574,7 @@ class Rocket6DOF(Env):
         r = np.float32(state[0:3])
         return not bool(self.position_bounds_space.contains(r))
 
+    #TODO: delete
     def _check_landing(self, state):
 
         r = np.linalg.norm(state[0:3])

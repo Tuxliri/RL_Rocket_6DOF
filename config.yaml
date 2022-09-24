@@ -15,7 +15,7 @@ env_config:
     - 0
     - 0
     - 0
-    - 41e3
+    - 41.0E+3
   ICRange:
     - 5
     - 100
@@ -30,7 +30,7 @@ env_config:
     - 0.1
     - 0.1
     - 0.1
-    - 1e3
+    - 1.0E+3
   reward_coeff: 
     alfa: -0.01
     beta: -1.0E-8

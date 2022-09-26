@@ -25,12 +25,24 @@ with open("config.yaml") as f:
 
 MAX_EPISODE_STEPS = int(sb3_config["max_time"]/env_config["timestep"])
 
+class ClipReward(gym.RewardWrapper):
+    def __init__(self, env, min_reward=-1, max_reward=100):
+        super().__init__(env)
+        self.min_reward = min_reward
+        self.max_reward = max_reward
+        self.reward_range = (min_reward, max_reward)
+    
+    def reward(self, reward):
+        import numpy as np
+        return np.clip(reward, self.min_reward, self.max_reward)
+
 def make_env():
     kwargs = env_config
     env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-    env = TimeLimit(
+    env = ClipReward(TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
+        )
     )
     env = Monitor(env)    
     

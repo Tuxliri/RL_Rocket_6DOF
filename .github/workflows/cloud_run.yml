@@ -27,4 +27,4 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: ./run_training_job.sh
+          script: nohup ./run_training_job.sh &

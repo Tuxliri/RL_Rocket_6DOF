@@ -287,7 +287,8 @@ class Rocket6DOF(Env):
         self.landing_pad_mesh = pv.Circle(radius=self.target_r)
         self.landing_pad_mesh.rotate_y(angle=90,inplace=True)
 
-        thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
+        # thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
+        thrust_vector = self.SIM.get_thrust_vector_inertial()
         arrow_kwargs = {'name': 'thrust_vector'}
 
         # self.plotter.add_arrows(
@@ -318,7 +319,7 @@ class Rocket6DOF(Env):
         v = state[3:6]
         m = state[-1]
 
-        thrust_vec, lever_arm_vector, = self.SIM.get_thrust_vector_inertial()
+        thrust_vec = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
         a_targ, t_go = self.get_atarg(r,v,m)

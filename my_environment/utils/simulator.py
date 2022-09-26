@@ -150,8 +150,6 @@ class Simulator6DOF():
     def get_thrust_vector_inertial(self):
         u = self.actions[-1]
         T_body_frame = self._get_thrust_body_frame(u)
-        if np.linalg.norm(T_body_frame) > 1e-6:
-            T_body_frame = -T_body_frame/np.linalg.norm(T_body_frame)*30
 
         current_state = self.states[-1]
         attitude_quaternion = current_state[6:10]
@@ -161,9 +159,9 @@ class Simulator6DOF():
         T_inertial_frame = R_B_to_I.dot(T_body_frame)
 
         # Get the hinge point of the thrust vector
-        r_thrust_inertial_frame = R_B_to_I.dot(np.array(self.r_T_B))+current_state[0:3]
+        #r_thrust_inertial_frame = R_B_to_I.dot(np.array(self.r_T_B))+current_state[0:3]
 
-        return T_inertial_frame, r_thrust_inertial_frame
+        return T_inertial_frame #, r_thrust_inertial_frame
 
     def _rot_mat_body_to_inertial(self, attitude_quaternion):
         """

@@ -32,13 +32,15 @@ class Rocket6DOF(Env):
             "gamma": -10,
             "delta": -5,
             "kappa": 10,
-            "xi": 0.004,
+            "w_r_f" : 1,
+            "w_v_f" : 5,
+            "max_r_f": 100,
+            "max_v_f": 100,
         },
         trajectory_limits={"attitude_limit": [85, 85, 360]},
         landing_params={
-            "waypoint": 50,
             "landing_radius": 30,
-            "maximum_velocity": 10,
+            "maximum_velocity": 15,
             "landing_attitude_limit": [10 , 10, 360,],  # [Yaw, Pitch, Roll],
             "omega_lim": [0.2, 0.2, 0.2],
         },
@@ -123,8 +125,8 @@ class Rocket6DOF(Env):
         )
 
         # Set environment bounds
-        position_bounds_high = 0.9 * np.maximum(self.state_normalizer[0:3], 100)
-        position_bounds_low = -0.9 * np.maximum(self.state_normalizer[1:3], 100)
+        position_bounds_high = 0.9 * np.maximum(self.state_normalizer[0:3], 200)
+        position_bounds_low = -0.9 * np.maximum(self.state_normalizer[1:3], 200)
         position_bounds_low = np.insert(position_bounds_low, 0, -30)
         self.position_bounds_space = spaces.Box(
             low=position_bounds_low, high=position_bounds_high, dtype=np.float32
@@ -163,8 +165,6 @@ class Rocket6DOF(Env):
         self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
 
         self.omega_lim = np.array([0.2, 0.2, 0.2])
-
-        self.waypoint = landing_params["waypoint"]
 
         # Renderer variables (pyvista)
         self.rocket_body_mesh = None
@@ -324,16 +324,15 @@ class Rocket6DOF(Env):
 
         a_targ, t_go = self.get_atarg(r,v,m)
 
-        thrust = denormalized_action[2]
+        thrust_magnitude = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
 
-        
         # Compute each reward term
         rewards_dict = {
             "acceleration_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
-            "thrust_penalty": coeff["beta"] * thrust,
+            "thrust_penalty": coeff["beta"] * thrust_magnitude,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
             **self._reward_goal(state),

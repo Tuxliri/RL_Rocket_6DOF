@@ -27,4 +27,4 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: ~/.bashrc && cd RL_Rocket_6DOF && git checkout current-cloud-run && git pull && source activate rl_rocket_env && echo "VIRTUAL ENV:" $VIRTUAL_ENV && python main_6DOF.py 
+          script: cd RL_Rocket_6DOF && git checkout current-cloud-run && git pull && ~/anaconda3/bin/activate activate rl_rocket_env && echo "VIRTUAL ENV:" $VIRTUAL_ENV

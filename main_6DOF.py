@@ -63,7 +63,11 @@ def make_annealed_env():
 def make_eval_env():
         kwargs = env_config
         training_env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-        training_env = TimeLimit(training_env, max_episode_steps=MAX_EPISODE_STEPS)
+        training_env = ClipReward(TimeLimit(
+            training_env,
+            max_episode_steps=MAX_EPISODE_STEPS
+            )
+        )
         return Monitor(RecordVideo(
             EpisodeAnalyzer(training_env),
             video_folder='eval_videos',
@@ -87,10 +91,7 @@ def start_training():
         save_code=True,  # optional
     )   
 
-    env = VecNormalize(
-        DummyVecEnv([make_env]),
-        norm_obs=False,
-        )
+    env = make_env()
 
     model = PPO(
         sb3_config["policy_type"],
@@ -98,13 +99,9 @@ def start_training():
         tensorboard_log=f"runs/{run.id}",
         verbose=2,
         seed=env_config["seed"],
-        ent_coef=0.01,
         )
     
-    eval_env =  VecNormalize(
-        DummyVecEnv([make_eval_env]),
-        norm_obs=False,
-        )
+    eval_env =  make_eval_env()
 
     callbacksList = [
         EvalCallback(

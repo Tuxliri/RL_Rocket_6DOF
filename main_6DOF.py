@@ -32,7 +32,7 @@ def make_env():
         env,
         max_episode_steps=MAX_EPISODE_STEPS
     )
-    env = Monitor(env,info_keywords=('is_succesful',))    
+    env = Monitor(env)    
     
     return env
 

@@ -5,24 +5,24 @@ env_config:
     - 2000  # x
     - -1600 # y
     - 0   # z
-    - -50   # vx
+    - -90   # vx
     - 180   # vy
     - 0     # vz
-    - 0.8660254
+    - 0.866
     - 0
     - 0
     - -0.5
     - 0
     - 0
     - 0
-    - 45e3
+    - 41.0E+3
   ICRange:
-    - 50
+    - 5
+    - 100
+    - 100
     - 10
     - 10
     - 10
-    - 10
-    - 10
     - 0.1
     - 0.1
     - 0.1
@@ -30,15 +30,20 @@ env_config:
     - 0.1
     - 0.1
     - 0.1
-    - 1e3
+    - 1.0E+3
   reward_coeff: 
-    alfa: -0.0025
-    beta: 0 #*-1e-7
+    alfa: -0.01
+    beta: -1.0E-8
     delta: -5
-    eta: 0.01
+    eta: 0.1
     gamma: -10
     kappa: 10
     xi: 0.004
+    w_r_f : 0.1
+    w_v_f : 0.6
+    max_r_f: 100
+    max_v_f: 100
+                        
   trajectory_limits: 
     attitude_limit: [85, 85, 360]
   landing_params: 
@@ -55,5 +60,5 @@ env_config:
 sb3_config: 
     env_id: "my_environment/Falcon6DOF-v0"
     policy_type: "MlpPolicy"
-    total_timesteps: 2.0E+6
+    total_timesteps: 6.0E+6
     max_time: 150

@@ -88,16 +88,8 @@ class EpisodeAnalyzer(gym.Wrapper):
                         "ep_history/rewards": rewards_dataframe.drop('time',axis=1).plot(),
                         "plots3d/atarg_trajectory": self.env.unwrapped.get_atarg_plotly(),
                         "plots3d/trajectory": fig,
-                        "ep_statistic/landing_success": info["rewards_dict"]["rew_goal"],
                         "ep_statistic/used_mass" : states_dataframe.iloc[0,-1] - states_dataframe.iloc[-1,-1],
-                        "tables/states": wandb.Table(dataframe=states_dataframe),
-                        "tables/actions": wandb.Table(dataframe=actions_dataframe),
-                        "tables/atarg": wandb.Table(dataframe=atarg_dataframe),
-                        "tables/rewards": wandb.Table(dataframe=rewards_dataframe),
-                        "my_custom_plot_id" : wandb.plot.line(wandb.Table(dataframe=rewards_dataframe), 
-                            x="time",y="velocity_tracking", title="Velocity error reward"),
-                            
-                        **final_errors_dict
+                        **final_errors_dict,
                     }
                 )
             

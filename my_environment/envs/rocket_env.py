@@ -210,7 +210,7 @@ class Rocket6DOF(Env):
         # Done if the rocket is at ground or outside bounds
         done = bool(isterminal) or self._check_bounds_violation(state)
 
-        reward, rewards_dict = self._compute_reward(state, self.action, state_derivatives)
+        reward, rewards_dict = self._compute_reward(state, self.action)
 
         info = {
             "rewards_dict": rewards_dict,
@@ -311,19 +311,19 @@ class Rocket6DOF(Env):
         pv.close_all()
         return None
 
-    def _compute_reward(self, state, action, state_derivatives):
+    def _compute_reward(self, state, denormalized_action):
         reward = 0
 
         r = state[0:3]
         v = state[3:6]
         m = state[-1]
 
-        thrust_vec = self.SIM.get_thrust_vector_inertial()
+        thrust_vec, lever_arm_vector, = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
         a_targ, t_go = self.get_atarg(r,v,m)
 
-        thrust = action[2]
+        thrust = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
@@ -378,7 +378,7 @@ class Rocket6DOF(Env):
             final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
 
         return {
-            'all_conditions': k*all(landing_conditions.values()),
+            'goal_conditions': k*all(landing_conditions.values()),
             'final_position': final_rewards[0],
             'final_velocity': final_rewards[1],
         }

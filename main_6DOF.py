@@ -106,7 +106,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq =  max(min(int(sb3_config["total_timesteps"]/20),50e3),200),
+            eval_freq =  min(int(sb3_config["total_timesteps"]/20),100e3),
             n_eval_episodes = 5,
             render=False,
             deterministic=True,

@@ -1,3 +1,4 @@
+# File specifying the environment and algorithm configuration
 env_config:
   timestep: 0.1
   seed: 42

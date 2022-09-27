@@ -60,5 +60,5 @@ env_config:
 sb3_config: 
     env_id: "my_environment/Falcon6DOF-v0"
     policy_type: "MlpPolicy"
-    total_timesteps: 6.0E+6
+    total_timesteps: 12.0E+6
     max_time: 150

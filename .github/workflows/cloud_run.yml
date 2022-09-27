@@ -31,6 +31,5 @@ jobs:
             cd RL_Rocket_6DOF
             git checkout current-cloud-run
             git pull
-            nohup /opt/conda/bin/conda run -n rl_rocket_env python main_6DOF.py > /dev/null 2>&1 &
+            screen -d -m "nohup /opt/conda/bin/conda run -n rl_rocket_env python main_6DOF.py"
             echo 'training run has started'
-            screen -X detach

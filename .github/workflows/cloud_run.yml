@@ -27,10 +27,5 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: |
-            cd RL_Rocket_6DOF
-            git checkout current-cloud-run
-            git pull
-            tmux new -stest
-            /opt/conda/bin/conda run -n rl_rocket_env python main_6DOF.py
-            tmux detach
+          script:  |
+            ./run_training_job.sh

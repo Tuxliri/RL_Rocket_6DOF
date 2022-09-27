@@ -28,4 +28,7 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script:  |
-            ./run_training_job.sh
+            cd RL_Rocket_6DOF
+            git checkout current-cloud-run
+            git pull
+            nohup /opt/conda/bin/conda run -n rl_rocket_env python main_6DOF.py

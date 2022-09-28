@@ -61,19 +61,19 @@ def make_annealed_env():
     return env
 
 def make_eval_env():
-        kwargs = env_config
-        training_env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-        training_env = ClipReward(TimeLimit(
-            training_env,
-            max_episode_steps=MAX_EPISODE_STEPS
-            )
+    kwargs = env_config
+    training_env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+    training_env = ClipReward(TimeLimit(
+        training_env,
+        max_episode_steps=MAX_EPISODE_STEPS
         )
-        return Monitor(RecordVideo(
-            EpisodeAnalyzer(training_env),
-            video_folder='eval_videos',
-            episode_trigger= lambda x : x%5==0
-            )
-            )
+    )
+    return Monitor(RecordVideo(
+        EpisodeAnalyzer(training_env),
+        video_folder='eval_videos',
+        episode_trigger= lambda x : x%5==0
+        )
+        )
 
 def start_training():
 
@@ -88,7 +88,6 @@ def start_training():
         project='RL_rocket_6DOF' if sb3_config["total_timesteps"]>1e5 else 'test_runs',
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=True,  # auto-upload the videos of agents playing the game
-        save_code=True,  # optional
     )   
 
     env = make_env()
@@ -106,7 +105,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq =  min(int(sb3_config["total_timesteps"]/20),100e3),
+            eval_freq = 100e3,
             n_eval_episodes = 5,
             render=False,
             deterministic=True,

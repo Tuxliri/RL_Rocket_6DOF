@@ -106,7 +106,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq = 100e3,
+            eval_freq = int(100e3),
             n_eval_episodes = 5,
             render=False,
             deterministic=True,

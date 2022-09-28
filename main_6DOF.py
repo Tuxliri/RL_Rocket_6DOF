@@ -68,12 +68,12 @@ def make_eval_env():
         max_episode_steps=MAX_EPISODE_STEPS
         )
     )
-    return Monitor(RecordVideo(
-        EpisodeAnalyzer(training_env),
-        video_folder='eval_videos',
-        episode_trigger= lambda x : x%5==0
-        )
-        )
+    return Monitor(
+        EpisodeAnalyzer(training_env),)
+        #video_folder='eval_videos',
+        #episode_trigger= lambda x : x%5==0
+        #)
+        
 
 def start_training():
 
@@ -87,7 +87,7 @@ def start_training():
         config={**env_config, **sb3_config},
         project='RL_rocket_6DOF' if sb3_config["total_timesteps"]>1e5 else 'test_runs',
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-        monitor_gym=True,  # auto-upload the videos of agents playing the game
+        #monitor_gym=True,  # auto-upload the videos of agents playing the game
     )   
 
     env = make_env()

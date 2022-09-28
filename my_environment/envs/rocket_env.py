@@ -374,8 +374,8 @@ class Rocket6DOF(Env):
             map(self.reward_coefficients.get,["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
             )
         
-        if landing_conditions["zero_height"] and landing_conditions["landing_radius"]:
-            final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
+        #if landing_conditions["zero_height"] and landing_conditions["landing_radius"]:
+        #    final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
 
         return {
             'goal_conditions': k*all(landing_conditions.values()),

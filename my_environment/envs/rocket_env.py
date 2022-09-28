@@ -322,7 +322,7 @@ class Rocket6DOF(Env):
         thrust_vec = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
-        a_targ, t_go = self.get_atarg(r,v,m)
+        a_targ = self.get_atarg(r,v,m)
 
         thrust_magnitude = denormalized_action[2]
 
@@ -542,9 +542,9 @@ class Rocket6DOF(Env):
         # Compute the saturated optimal target acceleration
         a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g,self.max_thrust/mass)
 
-        self.atarg_history.append(np.concatenate((a_targ,[t_go])))
+        self.atarg_history.append(a_targ)
 
-        return a_targ, t_go
+        return a_targ
 
     def get_atarg(self,r,v,m):
         return self._compute_atarg(r,v,m)
@@ -562,7 +562,7 @@ class Rocket6DOF(Env):
     def atarg_to_dataframe(self):
         import pandas as pd
 
-        return pd.DataFrame(self.atarg_history, columns=["ax", "ay", "az", "t_go"])
+        return pd.DataFrame(self.atarg_history, columns=["ax", "ay", "az"])
 
     def used_mass(self):
         initial_mass = self.SIM.states[0][-1]

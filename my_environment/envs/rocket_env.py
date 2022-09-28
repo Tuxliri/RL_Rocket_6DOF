@@ -373,14 +373,13 @@ class Rocket6DOF(Env):
         k, w_r_f, w_v_f, max_r_f, max_v_f= list(
             map(self.reward_coefficients.get,["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
             )
-        # Removed terminal reward shaping
-        #if landing_conditions["zero_height"] and landing_conditions["landing_radius"]:
-        #    final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
+
+        final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
 
         return {
             'goal_conditions': k*all(landing_conditions.values()),
-            'final_position': final_rewards[0],
-            'final_velocity': final_rewards[1],
+            'final_position': max(max_r_f-r,0)*w_r_f,
+            'final_velocity': max(max_v_f-v,0)*w_v_f if r<max_r_f else 0,
         }
 
     def get_trajectory_plotly(self):

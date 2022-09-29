@@ -98,7 +98,6 @@ def start_training():
         tensorboard_log=f"runs/{run.id}",
         verbose=2,
         seed=env_config["seed"],
-        ent_coef=0.0001
         )
     
     eval_env =  make_eval_env()
@@ -124,16 +123,6 @@ def start_training():
         total_timesteps=sb3_config["total_timesteps"],
         callback=callbacksList
     )
-
-    # annealed_env = make_annealed_env()
-
-    # model.set_env(annealed_env)
-
-    # # Train the ANNEALED model
-    # model.learn(
-    #     total_timesteps=sb3_config["total_timesteps"],
-    #     callback=callbacksList
-    # )
     
     # Save the model to .zip file
     savepath = os.getcwd()

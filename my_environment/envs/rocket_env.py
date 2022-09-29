@@ -181,6 +181,7 @@ class Rocket6DOF(Env):
 
         self.initial_condition = self.init_space.sample()
         self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])
+
         self.state = self.initial_condition
 
         # Create a rotation object representing the attitude of the system
@@ -200,8 +201,15 @@ class Rocket6DOF(Env):
 
         self.action = self._denormalize_action(normalized_action)
 
-        self.state, isterminal, state_derivatives = self.SIM.step(self.action)
+        self.state, isterminal, = self.SIM.step(self.action)
         state = self.state.astype(np.float32)
+        
+        # Compute the target velocity and store it
+        __ = self._compute_atarg(
+            r=np.array(state[0:3]),
+            v=np.array(state[3:6]),
+            mass=state[-1],
+        )
 
         # Create a rotation object representing the attitude of the system
         self.prev_rotation_obj = self.rotation_obj
@@ -322,7 +330,7 @@ class Rocket6DOF(Env):
         thrust_vec = self.SIM.get_thrust_vector_inertial()
         a = thrust_vec/m
 
-        a_targ = self.get_atarg(r,v,m)
+        a_targ = self.get_atarg()
 
         thrust_magnitude = denormalized_action[2]
 
@@ -369,17 +377,15 @@ class Rocket6DOF(Env):
         }
 
         
-        final_rewards = [0, 0]
-        k, w_r_f, w_v_f, max_r_f, max_v_f= list(
-            map(self.reward_coefficients.get,["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
-            )
+        k, w_r_f, w_v_f, max_r_f, max_v_f = list(map(self.reward_coefficients.get,
+                                            ["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
+                                            )
 
-        final_rewards = np.maximum([max_r_f-r,max_v_f-v],0) * [w_r_f, w_v_f]
 
         return {
             'goal_conditions': k*all(landing_conditions.values()),
             'final_position': max(max_r_f-r,0)*w_r_f,
-            'final_velocity': max(max_v_f-v,0)*w_v_f if r<max_r_f else 0,
+            'final_velocity': max(max_v_f-v,0)*w_v_f #if r<max_r_f else 0,
         }
 
     def get_trajectory_plotly(self):
@@ -519,12 +525,12 @@ class Rocket6DOF(Env):
                 -36*np.linalg.norm(r)**2,
                 ])
 
-            real_positive_roots = [n for n in solutions if (n.imag == 0 and n.real>0)][0].real
+            real_positive_root = [n for n in solutions if (n.imag == 0 and n.real>0)][0].real
 
             # Check that we have only one real solution
             #assert len(real_positive_roots) == 1, 'Multiple real solutions to t_go equation'
 
-            return real_positive_roots
+            return real_positive_root
 
         g = [-9.81,0,0] # Gravitational vector
 
@@ -546,8 +552,8 @@ class Rocket6DOF(Env):
 
         return a_targ
 
-    def get_atarg(self,r,v,m):
-        return self._compute_atarg(r,v,m)
+    def get_atarg(self):
+        return self.atarg_history[-1]
 
     def states_to_dataframe(self):
         import pandas as pd

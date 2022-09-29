@@ -84,7 +84,7 @@ class Simulator6DOF():
         self.states.append(self.state)
         self.actions.append(u)
 
-        return self.state, solution.status, self.RHS(self.t, self.state, u)
+        return self.state, solution.status
 
     def RHS(self, t, state, u):
         """ 
@@ -177,11 +177,16 @@ class Simulator6DOF():
 
     
     def _rot_mat_thrust_to_body(self, delta_y : float, delta_z : float) -> np.ndarray:
+        
+        cosy = np.cos(delta_y)
+        cosz = np.cos(delta_z)
+        siny = np.sin(delta_y)
+        sinz = np.sin(delta_z)
         return np.array(
             [
-                [np.cos(delta_y)*np.cos(delta_z),-np.sin(delta_y),-np.cos(delta_y)*np.sin(delta_z)],
-                [np.sin(delta_y)*np.cos(delta_z), np.cos(delta_y),-np.sin(delta_y)*np.sin(delta_z)],
-                [np.sin(delta_z), 0, np.cos(delta_z)]
+                [cosy*cosz,-siny,-cosy*sinz],
+                [siny*cosz, cosy,-siny*sinz],
+                [sinz, 0, cosz]
             ]
         )
 

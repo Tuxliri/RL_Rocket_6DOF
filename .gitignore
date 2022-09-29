@@ -173,3 +173,6 @@ Videos
 .csv
 .vscode/launch.json
 .vscode/tasks.json
+.dockerignore
+Dockerfile
+main.prof

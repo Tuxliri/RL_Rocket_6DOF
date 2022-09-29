@@ -40,8 +40,8 @@ env_config:
     gamma: -10
     kappa: 10
     xi: 0.004
-    w_r_f : 0.1       # SET TO 0 TO DISABLE TERMINAL REWARD
-    w_v_f : 0.8       # SET TO 0 TO DISABLE TERMINAL REWARD
+    w_r_f : 0       # SET TO 0 TO DISABLE TERMINAL REWARD
+    w_v_f : 0       # SET TO 0 TO DISABLE TERMINAL REWARD
     max_r_f: 100
     max_v_f: 30
                         

@@ -80,7 +80,7 @@ class Simulator6DOF():
         self.state[6:10] = self._normalize_quaternion(self.state[6:10])
         
 
-        # Keep track of all states
+        # Keep track of all states and actions
         self.states.append(self.state)
         self.actions.append(u)
 
@@ -208,5 +208,12 @@ class Simulator6DOF():
        
         T_body_frame = self._get_thrust_body_frame(thrust_vector)
         A_body_frame = self._get_aero_force_body(velocity)
+        
+        def cross_product(a,b):
+            return np.array([
+                a[1]*b[2]-a[2]*b[1],
+                a[2]*b[0]-a[0]*b[2],
+                a[0]*b[1]-a[1]*b[0]
+            ])
 
-        return np.cross(self.r_T_B,T_body_frame) + np.cross(self.r_cp_B, A_body_frame)
+        return cross_product(self.r_T_B,T_body_frame) + cross_product(self.r_cp_B, A_body_frame)

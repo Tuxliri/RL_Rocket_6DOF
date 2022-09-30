@@ -385,7 +385,7 @@ class Rocket6DOF(Env):
         return {
             'goal_conditions': k*all(landing_conditions.values()),
             'final_position': max(max_r_f-r,0)*w_r_f,
-            'final_velocity': max(max_v_f-v,0)*w_v_f #if r<max_r_f else 0,
+            'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
         }
 
     def get_trajectory_plotly(self):

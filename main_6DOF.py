@@ -110,7 +110,8 @@ def start_training():
             render=False,
             deterministic=True,
             verbose=2,
-            log_path='evaluation_logs'
+            log_path='evaluation_logs',
+            best_model_save_path=f"best_models/{run.id}"
             ),
         WandbCallback(
             model_save_path=f"models/{run.id}",
@@ -124,10 +125,6 @@ def start_training():
         callback=callbacksList
     )
     
-    # Save the model to .zip file
-    savepath = os.getcwd()
-    model.save(savepath)
-
     run.finish()
 
     return None

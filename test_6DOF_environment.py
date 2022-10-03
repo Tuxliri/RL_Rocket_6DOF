@@ -2,6 +2,7 @@
 Script to test functionality of the 6DOF environment
 """
 
+from genericpath import isfile
 from my_environment.envs import Rocket6DOF
 from gym.wrappers import RecordVideo
 
@@ -9,39 +10,44 @@ from gym.wrappers import RecordVideo
 from gym.wrappers import RecordVideo
 
 import pandas as pd
+import os
 
 pd.options.plotting.backend = "plotly"
 
 from stable_baselines3.ppo.ppo import PPO
 
-import yaml
-from yaml.loader import SafeLoader
+from main_6DOF import load_config
 
-with open("config.yaml") as f:
-    config=yaml.load(f,Loader=SafeLoader)
-    sb3_config = config["sb3_config"]
-    env_config = config["env_config"]
-
+sb3_config, env_config, = load_config()
 # Instantiate the environment
 env = Rocket6DOF(**env_config)
 
 # env=RecordVideo(env,video_folder="video_6DOF")
 
-# [delta_y, delta_z, thrust]
-null_action = [0.0, 0.0, -1]
-non_null_action = [1.0, 1.0, -0.5]
-model = PPO.load('model_brisk-donkey-8.zip')
+def get_action(action_type = 'null'):
+    # [delta_y, delta_z, thrust]
+    if action_type == 'null':
+        return [0.0, 0.0, -1]
+
+    elif action_type == 'constant':
+        return [1.0, 1.0, -0.5]
+        
+    elif os.path.isfile('model_brisk-donkey-8.zip'):
+        model = PPO.load('model_brisk-donkey-8.zip')
+        action, __, = model.predict(obs)
+        return action
 
 # Initialize the environment
 done = False
 obs = env.reset()
 env.render(mode="human")
 
+
 landing_attempts = 1
 succesful_landings = 0
 
 while landing_attempts <= 10:
-    action, __, = model.predict(obs)
+    action = get_action()
     obs, rew, done, info = env.step(action)
     env.render(mode="human")
     

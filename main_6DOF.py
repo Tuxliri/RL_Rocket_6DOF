@@ -15,13 +15,18 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from my_environment.wrappers import EpisodeAnalyzer, RewardAnnealing
 from wandb.integration.sb3 import WandbCallback
 
-import yaml
-from yaml.loader import SafeLoader
+def load_config():
+    import yaml
+    from yaml.loader import SafeLoader
 
-with open("config.yaml") as f:
-    config=yaml.load(f,Loader=SafeLoader)
-    sb3_config = config["sb3_config"]
-    env_config = config["env_config"]
+    with open("config.yaml") as f:
+        config=yaml.load(f,Loader=SafeLoader)
+        sb3_config = config["sb3_config"]
+        env_config = config["env_config"]
+
+    return sb3_config, env_config
+
+sb3_config, env_config, = load_config()
 
 MAX_EPISODE_STEPS = int(sb3_config["max_time"]/env_config["timestep"])
 

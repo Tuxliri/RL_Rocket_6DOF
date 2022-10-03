@@ -48,6 +48,10 @@ class Simulator6DOF():
             )         
         self.Jinv = np.linalg.inv(self.J)
         self.Isp = 360                      # Specific impulse [s]
+        self.Ca_matrix = np.diag(           # Aerodynamic coefficients matrix [-]
+            [0.82,0.82,0.82]
+            )
+        self.S_ref = 10.5                    # Reference aerodynamic surface [m**2]
 
         # Geometric properties
         self.r_T_B = [-15, 0, 0]
@@ -112,7 +116,7 @@ class Simulator6DOF():
 
         # Rotational dynamics
         OMEGA = self._get_omega_matrix(omega)
-        body_torques = self._get_body_torques(u,v_inertial)
+        body_torques = self._get_body_torques(u,v_inertial,q)
 
         dq = 0.5*OMEGA.dot(q)
         dom = self.Jinv.dot(body_torques-np.cross(omega,np.dot(self.J,omega)))
@@ -132,7 +136,7 @@ class Simulator6DOF():
         R_B_to_I = self._rot_mat_body_to_inertial(attitude_quaternion)
      
         T_body_frame = self._get_thrust_body_frame(control_vector)
-        A_body_frame = self._get_aero_force_body(velocity_I)
+        A_body_frame = self._get_aero_force_body(velocity_I,attitude_quaternion)
    
         inertial_force_vector = R_B_to_I.dot(T_body_frame+A_body_frame)
 
@@ -190,8 +194,10 @@ class Simulator6DOF():
             ]
         )
 
-    def _get_aero_force_body(self, velocity):
-        return np.array([0,0,0]) 
+    def _get_aero_force_body(self, velocity, quaternion, rho=1.225,):
+        ROT_MAT_I_TO_B = self._rot_mat_body_to_inertial(quaternion).transpose()
+        velocity_body_frame = ROT_MAT_I_TO_B@velocity
+        return -.5*rho*np.linalg.norm(velocity)*self.S_ref*self.Ca_matrix @ velocity_body_frame
 
     def _get_omega_matrix(self, omega):
         wx,wy,wz = omega
@@ -204,10 +210,10 @@ class Simulator6DOF():
         ])
 
 
-    def _get_body_torques(self, thrust_vector, velocity):
+    def _get_body_torques(self, thrust_vector, velocity,attitude_quaternion):
        
         T_body_frame = self._get_thrust_body_frame(thrust_vector)
-        A_body_frame = self._get_aero_force_body(velocity)
+        A_body_frame = self._get_aero_force_body(velocity, attitude_quaternion)
         
         def cross_product(a,b):
             return np.array([

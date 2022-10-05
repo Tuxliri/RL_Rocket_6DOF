@@ -346,6 +346,10 @@ class Rocket6DOF(Env):
             **self._reward_goal(state),
         }
 
+        x = r[0]
+
+        if x<100:
+            rewards_dict["acceleration_tracking"]=0
         reward = sum(rewards_dict.values())
 
         return reward, rewards_dict

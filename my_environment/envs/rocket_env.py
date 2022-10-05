@@ -552,11 +552,6 @@ class Rocket6DOF(Env):
         # Compute the saturated optimal target acceleration
         a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g,self.max_thrust/mass)
 
-        x = r[0]
-        if x<100:
-            a_targ[1]=0
-            a_targ[2]=0
-
         self.atarg_history.append(a_targ)
 
         return a_targ

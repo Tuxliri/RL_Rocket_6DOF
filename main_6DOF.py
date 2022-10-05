@@ -31,7 +31,7 @@ sb3_config, env_config, = load_config()
 MAX_EPISODE_STEPS = int(sb3_config["max_time"]/env_config["timestep"])
 
 class ClipReward(gym.RewardWrapper):
-    def __init__(self, env, min_reward=-5, max_reward=100):
+    def __init__(self, env, min_reward=-1, max_reward=100):
         super().__init__(env)
         self.min_reward = min_reward
         self.max_reward = max_reward

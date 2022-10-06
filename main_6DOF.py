@@ -1,5 +1,7 @@
 import os
 
+import torch
+
 import my_environment
 import gym
 import wandb
@@ -104,6 +106,7 @@ def start_training():
         verbose=2,
         seed=env_config["seed"],
         target_kl=0.01,
+        policy_kwargs=dict(activation_fn=torch.nn.ReLU,)
         )
     
     eval_env =  make_eval_env()

@@ -109,4 +109,4 @@ class RemoveMassFromObs(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Box(
             low=-1, high=1, shape=(13,))
     def observation(self, obs):
-        return obs[0:12]
+        return obs[0:13]

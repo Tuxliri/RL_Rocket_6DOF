@@ -2,6 +2,7 @@ __all__ = [
     "GaudetStateObs",
     "RewardAnnealing",
     "EpisodeAnalyzer",
+    "RemoveMassFromObs",
 ]
 
 import gym
@@ -100,3 +101,12 @@ class EpisodeAnalyzer(gym.Wrapper):
             self.rewards_info = []
 
         return obs, rew, done, info
+
+class RemoveMassFromObs(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        # Define observation space
+        self.observation_space = gym.spaces.Box(
+            low=-1, high=1, shape=(13,))
+    def observation(self, obs):
+        return obs[0:13]

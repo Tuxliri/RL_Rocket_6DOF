@@ -12,7 +12,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 
-from my_environment.wrappers import EpisodeAnalyzer, RewardAnnealing
+from my_environment.wrappers import *
 from wandb.integration.sb3 import WandbCallback
 
 def load_config():
@@ -43,7 +43,7 @@ class ClipReward(gym.RewardWrapper):
 
 def make_env():
     kwargs = env_config
-    env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
     env = ClipReward(TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
@@ -67,7 +67,7 @@ def make_annealed_env():
 
 def make_eval_env():
     kwargs = env_config
-    training_env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+    training_env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
     training_env = ClipReward(TimeLimit(
         training_env,
         max_episode_steps=MAX_EPISODE_STEPS
@@ -110,8 +110,8 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq = int(100e3),
-            n_eval_episodes = 5,
+            eval_freq = int(200e3),
+            n_eval_episodes = 15,
             render=False,
             deterministic=True,
             verbose=2,

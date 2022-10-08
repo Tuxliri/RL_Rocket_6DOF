@@ -41,11 +41,12 @@ class Simulator6DOF():
 
         # Define rocket properties
         self.m = IC[13]                     # rocket initial mass [kg]
-        self.Cdalfa = 2                     # drag coefficient [-]
-        self.Cnalfa = 1                     # normal force coefficient [-]
-        self.J = np.diag(                   # inertia moment [kg*m^2]
-            [75350.25, 6037675.13, 6037675.13]
-            )         
+        self.base_radius = 3.66             # rocket base radius
+        self.J = np.diag([                  # inertia moment [kg*m^2]
+                .5*self.m*self.base_radius**2,
+                1/12*self.m*self.base_radius**2,
+                1/12*self.m*self.base_radius**2,
+                ])         
         self.Jinv = np.linalg.inv(self.J)
         self.Isp = 360                      # Specific impulse [s]
         self.Ca_matrix = np.diag(           # Aerodynamic coefficients matrix [-]
@@ -56,7 +57,6 @@ class Simulator6DOF():
         # Geometric properties
         self.r_T_B = [-15, 0, 0]
         self.r_cp_B = [5,0,0]
-        return None
 
     def step(self, u):
 
@@ -105,7 +105,6 @@ class Simulator6DOF():
         # Implement getting it from the height (y)
         rho = 1.225  # *exp(-y/H) scaling due to height
         
-        g = self.g0  # Simplification of: g=self.g0*(earth_radius/(earth_radius+x))**2
         g_I = [-self.g0,0,0]
 
         # Translational dynamics
@@ -143,11 +142,12 @@ class Simulator6DOF():
         return inertial_force_vector
 
     def _get_thrust_body_frame(self, control_vector):
-        delta_y = control_vector[0]
-        delta_z = control_vector[1]
+
         thrust = control_vector[2]
 
-        ROT_MAT = self._rot_mat_thrust_to_body(delta_y,delta_z)
+        ROT_MAT = self._rot_mat_thrust_to_body(
+            delta_y=control_vector[0],
+            delta_z=control_vector[1])
         T_body_frame = ROT_MAT@[thrust,0.,0.]
         return T_body_frame
 

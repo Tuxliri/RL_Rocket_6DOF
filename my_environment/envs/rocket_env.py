@@ -348,7 +348,7 @@ class Rocket6DOF(Env):
 
         x = r[0]
 
-        if x<100:
+        if x<50:
             rewards_dict["acceleration_tracking"]=0
         reward = sum(rewards_dict.values())
 

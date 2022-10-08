@@ -135,8 +135,6 @@ class Rocket6DOF(Env):
         # Define observation space
         self.observation_space = spaces.Box(low=-1, high=1, shape=(14,))
 
-        # TODO: remove this check as when using different observation
-        # than the state of the system it would result in a raised error
         assert (
             self.observation_space.shape == self.init_space.shape
         ), f"The observation space has shape {self.observation_space.shape}\

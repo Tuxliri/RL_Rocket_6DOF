@@ -12,26 +12,26 @@ class Simulator6DOF():
 
         self.timestep = dt
         self.t = 0
-        self.state = IC                     # state is in GLOBAL COORDINATES
-                                            # state[0] : x axis position
-                                            # state[1] : y axis position
-                                            # state[2] : z axis position
-                                            # state[3] : vx axis velocity
-                                            # state[4] : vy axis velocity
-                                            # state[5] : vz axis velocity
-                                            # state[6] : q0 quaternion component (scalar part)
-                                            # state[7] : q1 quaternion component (vector part)
-                                            # state[8] : q2 quaternion component (vector part)
-                                            # state[9] : q3 quaternion component (vector part)
-                                            # state[10]: omega_1 rotational velocity component
-                                            # state[11]: omega_2 rotational velocity component
-                                            # state[12]: omega_3 rotational velocity component
-                                            # state[13] : rocket mass
+        self.state = IC                         # state is in GLOBAL COORDINATES
+                                                # state[0] : x axis position
+                                                # state[1] : y axis position
+                                                # state[2] : z axis position
+                                                # state[3] : vx axis velocity
+                                                # state[4] : vy axis velocity
+                                                # state[5] : vz axis velocity
+                                                # state[6] : q0 quaternion component (scalar part)
+                                                # state[7] : q1 quaternion component (vector part)
+                                                # state[8] : q2 quaternion component (vector part)
+                                                # state[9] : q3 quaternion component (vector part)
+                                                # state[10]: omega_1 rotational velocity component
+                                                # state[11]: omega_2 rotational velocity component
+                                                # state[12]: omega_3 rotational velocity component
+                                                # state[13] : rocket mass
 
         self.states = [IC]
-        self.actions = [[0,0,0]]            # action[0] : delta_y thrust gimbal angle
-                                            # action[1] : delta_z thrust gimbal angle
-                                            # action[2] : thrust magnitude
+        self.actions = [[0,0,0]]                # action[0] : delta_y thrust gimbal angle
+                                                # action[1] : delta_z thrust gimbal angle
+                                                # action[2] : thrust magnitude
 
         self.times = [0]
 
@@ -40,19 +40,24 @@ class Simulator6DOF():
         self.g0 = 9.81
 
         # Define rocket properties
-        self.m = IC[13]                     # rocket initial mass [kg]
-        self.diameter = 3.66           # rocket base radius
-        self.J = np.diag([                  # inertia moment [kg*m^2]
-                .5*self.m*(self.diameter/2)**2,
-                1/12*self.m*(self.diameter/2)**2,
-                1/12*self.m*(self.diameter/2)**2,
-                ])         
+        self.m = IC[13]                         # rocket initial mass [kg]
+        self.length = 40                        # rocket body length [m]
+        self.base_radius = 3.66/2               # rocket base radius
+        self.J = np.diag([                      # inertia moment [kg*m^2]
+                .5*self.m*self.base_radius**2,
+                1/12*self.m*(self.length**2+3*self.base_radius**2),
+                1/12*self.m*(self.length**2+3*self.base_radius**2),
+                ])     
         self.Jinv = np.linalg.inv(self.J)
-        self.Isp = 360                      # Specific impulse [s]
-        self.Ca_matrix = np.diag(           # Aerodynamic coefficients matrix [-]
+        self.Isp = 360                          # Specific impulse [s]
+        
+        # Aerodynamic parameters
+        self.Ca_matrix = np.diag(               # Aerodynamic coefficients matrix [-]
             [0.82,0.82,0.82]
             )
-        self.S_ref = 10.5                    # Reference aerodynamic surface [m**2]
+        self.S_ref = np.pi*self.base_radius**2  # Reference aerodynamic surface [m**2]
+        self.H_r = 7160                         # Scale height factor [m]
+        self.rho_0 = 1.225
 
         # Geometric properties
         self.r_T_B = [-15, 0, 0]
@@ -103,20 +108,21 @@ class Simulator6DOF():
         mass = state[13]
 
         # Implement getting it from the height (y)
-        rho = 1.225  # *exp(-y/H) scaling due to height
+        rho = self.rho_0*np.exp(-r_inertial[0]/self.H_r)
+
         
         g_I = [-self.g0,0,0]
 
         # Translational dynamics
-        F_I = self._compute_forces_inertial_rf(q,u,v_inertial)
+        F_I = self._compute_forces_inertial_rf(q,u,v_inertial,rho)
 
         dr = v_inertial
         dv = 1/mass*F_I + g_I
 
         # Rotational dynamics
         OMEGA = self._get_omega_matrix(omega)
-        body_torques = self._get_body_torques(u,v_inertial,q)
-
+        body_torques = self._get_body_torques(u,v_inertial,q,rho)
+        
         dq = 0.5*OMEGA.dot(q)
         dom = self.Jinv.dot(body_torques-np.cross(omega,np.dot(self.J,omega)))
 
@@ -130,13 +136,13 @@ class Simulator6DOF():
     def _normalize_quaternion(self,q):
         return q/np.linalg.norm(q)
 
-    def _compute_forces_inertial_rf(self, attitude_quaternion, control_vector, velocity_I):
+    def _compute_forces_inertial_rf(self, attitude_quaternion, control_vector, velocity_I,rho):
         
         R_B_to_I = self._rot_mat_body_to_inertial(attitude_quaternion)
      
         T_body_frame = self._get_thrust_body_frame(control_vector)
-        A_body_frame = self._get_aero_force_body(velocity_I,attitude_quaternion)
-   
+        A_body_frame = self._get_aero_force_body(velocity_I,attitude_quaternion,rho)
+        
         inertial_force_vector = R_B_to_I.dot(T_body_frame+A_body_frame)
 
         return inertial_force_vector
@@ -160,12 +166,8 @@ class Simulator6DOF():
         R_B_to_I = self._rot_mat_body_to_inertial(attitude_quaternion)
 
         #Get the thrust vector in the inertial reference frame
-        T_inertial_frame = R_B_to_I.dot(T_body_frame)
+        return R_B_to_I.dot(T_body_frame)
 
-        # Get the hinge point of the thrust vector
-        #r_thrust_inertial_frame = R_B_to_I.dot(np.array(self.r_T_B))+current_state[0:3]
-
-        return T_inertial_frame #, r_thrust_inertial_frame
 
     def _rot_mat_body_to_inertial(self, attitude_quaternion):
         """
@@ -194,7 +196,7 @@ class Simulator6DOF():
             ]
         )
 
-    def _get_aero_force_body(self, velocity, quaternion, rho=1.225,):
+    def _get_aero_force_body(self, velocity, quaternion, rho=0,):
         ROT_MAT_I_TO_B = self._rot_mat_body_to_inertial(quaternion).transpose()
         velocity_body_frame = ROT_MAT_I_TO_B@velocity
         return -.5*rho*np.linalg.norm(velocity)*self.S_ref*self.Ca_matrix @ velocity_body_frame
@@ -210,10 +212,10 @@ class Simulator6DOF():
         ])
 
 
-    def _get_body_torques(self, thrust_vector, velocity,attitude_quaternion):
+    def _get_body_torques(self, thrust_vector, velocity,attitude_quaternion,rho):
        
         T_body_frame = self._get_thrust_body_frame(thrust_vector)
-        A_body_frame = self._get_aero_force_body(velocity, attitude_quaternion)
+        A_body_frame = self._get_aero_force_body(velocity, attitude_quaternion,rho)
         
         def cross_product(a,b):
             return np.array([

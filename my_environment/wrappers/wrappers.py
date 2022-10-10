@@ -3,13 +3,15 @@ __all__ = [
     "RewardAnnealing",
     "EpisodeAnalyzer",
     "RemoveMassFromObs",
+    "VerticalAttitudeReward",
 ]
 
 import gym
 from gym.spaces import Box
 from matplotlib import pyplot as plt
+from gym import Env
 
-from my_environment.envs.rocket_env import Rocket6DOF
+#from my_environment.envs.rocket_env import Rocket6DOF
 import numpy as np
 import wandb
 import pandas as pd
@@ -59,7 +61,7 @@ class EpisodeAnalyzer(gym.Wrapper):
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
         
-        assert isinstance(env.unwrapped, Rocket6DOF)
+        #assert isinstance(env.unwrapped, Rocket6DOF)
         self.rewards_info = []
 
     def step(self, action):
@@ -102,6 +104,7 @@ class EpisodeAnalyzer(gym.Wrapper):
 
         return obs, rew, done, info
 
+# Reward shaping wrappers
 class RemoveMassFromObs(gym.ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
@@ -110,3 +113,28 @@ class RemoveMassFromObs(gym.ObservationWrapper):
             low=-1, high=1, shape=(13,))
     def observation(self, obs):
         return obs[0:13]
+
+class VerticalAttitudeReward(gym.Wrapper):
+    def __init__(self, env: Env, threshold_height=1e-3, weight=-1) -> None:
+        super().__init__(env)
+        self.threshold_height=threshold_height
+        self.reward_weight=weight
+    
+    def step(self, action):
+        obs, rew, done, info = super().step(action)
+        state = self.env.unwrapped.get_state() 
+        x=state[0]
+
+        
+        if x<self.threshold_height and info["rewards_dict"]["terminal_reward_pos_vel"]>0:
+            q = state[6:10]
+
+            # Compute the angular deviation from vertical attitudes
+            vertical_attitude_rew = 2*np.degrees(np.arccos(q[0]))*self.reward_weight
+            
+            rew+=vertical_attitude_rew
+            
+            info["rewards_dict"]["vertical_attitude_reward"]=vertical_attitude_rew
+
+        info["rewards_dict"].setdefault("vertical_attitude_reward",0)
+        return obs, rew, done, info

@@ -41,11 +41,11 @@ class Simulator6DOF():
 
         # Define rocket properties
         self.m = IC[13]                     # rocket initial mass [kg]
-        self.base_radius = 3.66             # rocket base radius
+        self.diameter = 3.66           # rocket base radius
         self.J = np.diag([                  # inertia moment [kg*m^2]
-                .5*self.m*self.base_radius**2,
-                1/12*self.m*self.base_radius**2,
-                1/12*self.m*self.base_radius**2,
+                .5*self.m*(self.diameter/2)**2,
+                1/12*self.m*(self.diameter/2)**2,
+                1/12*self.m*(self.diameter/2)**2,
                 ])         
         self.Jinv = np.linalg.inv(self.J)
         self.Isp = 360                      # Specific impulse [s]

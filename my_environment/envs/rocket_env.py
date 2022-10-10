@@ -609,6 +609,9 @@ class Rocket6DOF(Env):
         self.init_space.seed(seed)
         return super().seed(seed)
 
+    def get_state(self):
+        return self.state
+
     def _get_normalizer(self):
         return self.state_normalizer
 

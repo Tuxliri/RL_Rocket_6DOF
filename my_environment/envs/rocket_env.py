@@ -182,12 +182,6 @@ class Rocket6DOF(Env):
 
         self.state = self.initial_condition
 
-        # Create a rotation object representing the attitude of the system
-        # assert (
-        #     np.linalg.norm(self.state[6:10]) == 1.0
-        # ), f"The quaternion doesn't have unit norm! It's components are {self.state[6:10]}"
-        
-
         self.rotation_obj = R.from_quat(self._scipy_quat_convention(self.state[6:10]))
        
         # instantiate the simulator object

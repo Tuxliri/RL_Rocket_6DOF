@@ -105,6 +105,7 @@ def start_training():
         tensorboard_log=f"runs/{run.id}",
         verbose=2,
         seed=env_config["seed"],
+        batch_size=512
         # policy_kwargs=dict(net_arch=[128,64])
         )
     

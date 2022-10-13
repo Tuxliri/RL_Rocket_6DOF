@@ -126,7 +126,7 @@ class VerticalAttitudeReward(gym.Wrapper):
         x=state[0]
 
         
-        if x<self.threshold_height and info["rewards_dict"]["terminal_reward_pos_vel"]>0:
+        if x<self.threshold_height and info["rewards_dict"]["final_velocity"]>0:
             q = state[6:10]
 
             # Compute the angular deviation from vertical attitudes

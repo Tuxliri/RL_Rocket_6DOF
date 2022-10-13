@@ -41,9 +41,9 @@ env_config:
     kappa: 10
     xi: 0.004
     w_r_f : 0       # SET TO 0 TO DISABLE TERMINAL REWARD
-    w_v_f : 0.75       # SET TO 0 TO DISABLE TERMINAL REWARD
-    max_r_f: 75
-    max_v_f: 50
+    w_v_f : 0.5       # SET TO 0 TO DISABLE TERMINAL REWARD
+    max_r_f: 100
+    max_v_f: 75
                         
   trajectory_limits: 
     attitude_limit: [85, 85, 360]

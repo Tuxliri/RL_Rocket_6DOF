@@ -115,7 +115,7 @@ class RemoveMassFromObs(gym.ObservationWrapper):
         return obs[0:13]
 
 class VerticalAttitudeReward(gym.Wrapper):
-    def __init__(self, env: Env, threshold_height=1e-3, weight=-1) -> None:
+    def __init__(self, env: Env, threshold_height=1e-3, weight=-0.5) -> None:
         super().__init__(env)
         self.threshold_height=threshold_height
         self.reward_weight=weight
@@ -130,7 +130,11 @@ class VerticalAttitudeReward(gym.Wrapper):
             q = state[6:10]
 
             # Compute the angular deviation from vertical attitudes
-            vertical_attitude_rew = 2*np.degrees(np.arccos(q[0]))*self.reward_weight
+            vertical_attitude_rew = np.clip(
+                2*np.degrees(np.arccos(q[0]))*self.reward_weight,
+                a_min=-10,
+                a_max=+10,
+            )
             
             rew+=vertical_attitude_rew
             

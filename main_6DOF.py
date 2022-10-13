@@ -11,8 +11,6 @@ from gym.wrappers import TimeLimit, RecordVideo
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
-from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 
 from my_environment.wrappers import *
 from wandb.integration.sb3 import WandbCallback
@@ -56,17 +54,6 @@ def make_env():
     
     return env
 
-def make_annealed_env():
-    kwargs = env_config
-    env = gym.make("my_environment/Falcon6DOF-v0",**kwargs)
-
-    # ADD REWARD ANNEALING
-    env = RewardAnnealing(env)
-
-    env = TimeLimit(env, max_episode_steps=MAX_EPISODE_STEPS)
-    env = Monitor(env)    
-    
-    return env
 
 def make_eval_env():
     kwargs = env_config

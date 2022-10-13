@@ -46,10 +46,11 @@ class ClipReward(gym.RewardWrapper):
 def make_env():
     kwargs = env_config
     env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-    env = ClipReward(TimeLimit(
+    env = VerticalAttitudeReward(ClipReward(TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
         )
+    )
     )
     env = Monitor(env)    
     
@@ -70,10 +71,11 @@ def make_annealed_env():
 def make_eval_env():
     kwargs = env_config
     training_env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-    training_env = ClipReward(TimeLimit(
+    training_env = VerticalAttitudeReward(ClipReward(TimeLimit(
         training_env,
         max_episode_steps=MAX_EPISODE_STEPS
         )
+    )
     )
     return Monitor(
         EpisodeAnalyzer(training_env),)

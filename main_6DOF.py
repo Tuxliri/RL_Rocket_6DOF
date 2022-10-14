@@ -11,6 +11,7 @@ from gym.wrappers import TimeLimit, RecordVideo
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.utils import get_linear_fn
 
 from my_environment.wrappers import *
 from wandb.integration.sb3 import WandbCallback
@@ -92,7 +93,8 @@ def start_training():
         tensorboard_log=f"runs/{run.id}",
         verbose=2,
         seed=env_config["seed"],
-        policy_kwargs=dict(net_arch=[128,64])
+        policy_kwargs=dict(net_arch=[128,64]),
+        clip_range=get_linear_fn(0.2,0.02,0.5),
         )
     
     eval_env =  make_eval_env()

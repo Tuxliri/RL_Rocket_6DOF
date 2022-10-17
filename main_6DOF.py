@@ -85,19 +85,21 @@ def start_training():
         #monitor_gym=True,  # auto-upload the videos of agents playing the game
     )   
 
-    env = make_env()
-
-    model = PPO(
-        sb3_config["policy_type"],
-        env,
-        tensorboard_log=f"runs/{run.id}",
-        verbose=2,
-        seed=env_config["seed"],
-        policy_kwargs=dict(net_arch=[128,64]),
-        clip_range=get_linear_fn(0.2,0.02,0.5),
-        )
+    env = RewardAnnealing(make_env())
     
-    eval_env =  make_eval_env()
+    # model = PPO(
+    #     sb3_config["policy_type"],
+    #     env,
+    #     tensorboard_log=f"runs/{run.id}",
+    #     verbose=2,
+    #     seed=env_config["seed"],
+    #     policy_kwargs=dict(net_arch=[128,64]),
+    #     clip_range=get_linear_fn(0.2,0.02,0.5),
+    #     )
+    
+    model = PPO.load('best_model_5gts65de', env)
+
+    eval_env =  RewardAnnealing(make_eval_env())
 
     callbacksList = [
         EvalCallback(

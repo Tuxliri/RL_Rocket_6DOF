@@ -34,7 +34,7 @@ env_config:
     - 1.0E+3
   reward_coeff: 
     alfa: -0.01
-    beta: -1.0E-8
+    beta: -0.5E-7
     delta: -5
     eta: 0.1
     gamma: -10

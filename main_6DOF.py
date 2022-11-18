@@ -44,15 +44,28 @@ class ClipReward(gym.RewardWrapper):
 def make_env():
     kwargs = env_config
     env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-    env = ClipReward(TimeLimit(
+    env = TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
         )
-    )
     env = Monitor(env)    
     
     return env
 
+def make_annealed_env():
+    kwargs = env_config
+    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
+
+    # ADD REWARD ANNEALING
+    env = RewardAnnealing(env)
+
+    env = TimeLimit(
+        env,
+        max_episode_steps=MAX_EPISODE_STEPS
+        )
+    env = Monitor(env)    
+    
+    return env
 
 def make_eval_env():
     kwargs = env_config
@@ -64,9 +77,6 @@ def make_eval_env():
     )
     return Monitor(
         EpisodeAnalyzer(training_env),)
-        #video_folder='eval_videos',
-        #episode_trigger= lambda x : x%5==0
-        #)
         
 
 def start_training():
@@ -100,7 +110,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq = int(200e3),
+            eval_freq = int(1e3),
             n_eval_episodes = 15,
             render=False,
             deterministic=True,
@@ -115,6 +125,16 @@ def start_training():
         ]
 
     # Train the model
+    model.learn(
+        total_timesteps=sb3_config["total_timesteps"],
+        callback=callbacksList
+    )
+    
+    annealed_env = make_annealed_env()
+
+    model.set_env(annealed_env)
+
+    # Train the ANNEALED model
     model.learn(
         total_timesteps=sb3_config["total_timesteps"],
         callback=callbacksList

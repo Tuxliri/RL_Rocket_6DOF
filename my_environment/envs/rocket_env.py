@@ -152,6 +152,7 @@ class Rocket6DOF(Env):
         self.rotation_obj: R = None
         self.action = np.array([0.0, 0.0, 0.0])
         self.atarg_history = []
+        self.vtarg_history = []
 
         # Trajectory constratints
         self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
@@ -163,6 +164,7 @@ class Rocket6DOF(Env):
         self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
 
         self.omega_lim = np.array([0.2, 0.2, 0.2])
+        self.waypoint = landing_params["waypoint"]
 
         # Renderer variables (pyvista)
         self.rocket_body_mesh = None
@@ -319,10 +321,7 @@ class Rocket6DOF(Env):
         v = state[3:6]
         m = state[-1]
 
-        thrust_vec = self.SIM.get_thrust_vector_inertial()
-        a = thrust_vec/m
-
-        a_targ = self.get_atarg()
+        v_targ, __ = self._compute_vtarg(r, v)
 
         thrust_magnitude = denormalized_action[2]
 
@@ -331,17 +330,14 @@ class Rocket6DOF(Env):
 
         # Compute each reward term
         rewards_dict = {
-            "acceleration_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ),
+            "velocity_tracking": coeff["alfa"] * np.linalg.norm(v - v_targ),
             "thrust_penalty": coeff["beta"] * thrust_magnitude,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
             **self._reward_goal(state),
         }
 
-        x = r[0]
-
-        if x<50:
-            rewards_dict["acceleration_tracking"]=0
+        
         reward = sum(rewards_dict.values())
 
         return reward, rewards_dict
@@ -380,8 +376,8 @@ class Rocket6DOF(Env):
 
         return {
             'goal_conditions': k*all(landing_conditions.values()),
-            'final_position': max(max_r_f-r,0)*w_r_f,
-            'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
+            #'final_position': max(max_r_f-r,0)*w_r_f,
+            #'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
         }
 
     def get_trajectory_plotly(self):
@@ -624,3 +620,78 @@ class Rocket6DOF(Env):
             (pygame.K_DOWN,): [0, 0, -1.0],
         }
         return mapping
+
+    
+    def _compute_vtarg(self, r, v):
+        tau_1 = 20
+        tau_2 = 100
+        initial_conditions = self.SIM.states[0]
+
+        v_0 = np.linalg.norm(initial_conditions[3:6])
+
+        rx = r[0]
+
+        if rx > self.waypoint:
+            r_hat = r - [self.waypoint, 0, 0]
+            v_hat = v - [-2, 0, 0]
+            tau = tau_1
+
+        else:
+            r_hat = [rx + 1, 0, 0]
+            v_hat = v - [-1, 0, 0]
+            tau = tau_2
+
+        t_go = np.linalg.norm(r_hat) / np.linalg.norm(v_hat)
+        v_targ = (
+            -v_0
+            * (np.array(r_hat) / max(1e-3, np.linalg.norm(r_hat)))
+            * (1 - np.exp(-t_go / tau))
+        )
+
+        self.vtarg_history.append(v_targ)
+
+        return v_targ, t_go
+
+
+    def _vtarg_plot_figure(self, trajectory_df: DataFrame):
+        import plotly.express as px
+        
+        # Create vtarg dataframe
+        vtarg_df = self.vtarg_to_dataframe()
+
+        fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z")
+
+        # Set camera location
+        camera = dict(
+            up=dict(x=1, y=0, z=0),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0.5 * 1.25, y=1.25, z=0 * 1.25),
+        )
+
+        fig.update_layout(scene_camera=camera)
+        x_f, y_f, z_f = self.landing_target
+
+        # Add landing pad location and velocity vector
+        fig.add_scatter3d(x=[x_f], y=[y_f], z=[z_f])
+        fig.add_cone(
+            x=trajectory_df["x"],
+            y=trajectory_df["y"],
+            z=trajectory_df["z"],
+            u=vtarg_df["v_x"], # TODO: CHANGE TO vtarg
+            v=vtarg_df["v_y"],
+            w=vtarg_df["v_z"],
+            sizeref=3,
+        )
+
+        fig.update_layout(scene_aspectmode='data')
+
+        return fig
+
+    def get_vtarg_trajectory(self):
+        trajectory_dataframe = self.states_to_dataframe()
+        return self._vtarg_plot_figure(trajectory_dataframe)
+
+    def vtarg_to_dataframe(self):
+        import pandas as pd
+
+        return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z"])

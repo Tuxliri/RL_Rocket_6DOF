@@ -178,6 +178,7 @@ class Rocket6DOF(Env):
         """
 
         self.atarg_history = []
+        self.vtarg_history = []
 
         self.initial_condition = self.init_space.sample()
         self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])

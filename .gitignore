@@ -3,6 +3,8 @@ models/
 runs/
 videos/
 wandb/
+eval_videos/
+evaluation_logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -171,3 +173,6 @@ Videos
 .csv
 .vscode/launch.json
 .vscode/tasks.json
+.dockerignore
+Dockerfile
+main.prof

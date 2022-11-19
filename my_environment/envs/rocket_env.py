@@ -1,8 +1,8 @@
 __all__ = ["Rocket6DOF"]
 
 # This is the gym environment to test the RL algorithms
-# on the rocket landing control problem. It is a simplified
-# 3DOF version of the real 6DOF dynamics
+# on the rocket landing control problem. It is the real 
+# 6DOF dynamics
 
 import numpy as np
 import pyvista as pv
@@ -17,7 +17,7 @@ class Rocket6DOF(Env):
 
     """Simple environment simulating a 6DOF rocket"""
 
-    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 30}
+    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 1/0.1}
 
     def __init__(
         self,
@@ -32,14 +32,16 @@ class Rocket6DOF(Env):
             "gamma": -10,
             "delta": -5,
             "kappa": 10,
-            "xi": 0.004,
+            "w_r_f" : 1,
+            "w_v_f" : 5,
+            "max_r_f": 100,
+            "max_v_f": 100,
         },
-        trajectory_limits={"attitude_limit": [1.5, 1.5, 2 * np.pi]},
+        trajectory_limits={"attitude_limit": [85, 85, 360]},
         landing_params={
-            "waypoint": 50,
             "landing_radius": 30,
-            "maximum_velocity": 10,
-            "landing_attitude_limit": [0.2, 0.2, 2 * np.pi],  # [Yaw, Pitch, Roll],
+            "maximum_velocity": 15,
+            "landing_attitude_limit": [10 , 10, 360,],  # [Yaw, Pitch, Roll],
             "omega_lim": [0.2, 0.2, 0.2],
         },
     ) -> None:
@@ -123,8 +125,8 @@ class Rocket6DOF(Env):
         )
 
         # Set environment bounds
-        position_bounds_high = 0.9 * np.maximum(self.state_normalizer[0:3], 100)
-        position_bounds_low = -0.9 * np.maximum(self.state_normalizer[1:3], 100)
+        position_bounds_high = 0.9 * np.maximum(self.state_normalizer[0:3], 200)
+        position_bounds_low = -0.9 * np.maximum(self.state_normalizer[1:3], 200)
         position_bounds_low = np.insert(position_bounds_low, 0, -30)
         self.position_bounds_space = spaces.Box(
             low=position_bounds_low, high=position_bounds_high, dtype=np.float32
@@ -133,8 +135,6 @@ class Rocket6DOF(Env):
         # Define observation space
         self.observation_space = spaces.Box(low=-1, high=1, shape=(14,))
 
-        # TODO: remove this check as when using different observation
-        # than the state of the system it would result in a raised error
         assert (
             self.observation_space.shape == self.init_space.shape
         ), f"The observation space has shape {self.observation_space.shape}\
@@ -149,23 +149,21 @@ class Rocket6DOF(Env):
         self.state = None
         self.infos = []
         self.SIM: Simulator6DOF = None
-        self.prev_rotation_obj: R = None
         self.rotation_obj: R = None
         self.action = np.array([0.0, 0.0, 0.0])
+        self.atarg_history = []
         self.vtarg_history = []
 
         # Trajectory constratints
-        self.attitude_traj_limit = trajectory_limits["attitude_limit"]
+        self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
 
         # Landing parameters
         self.target_r = landing_params["landing_radius"]
         self.maximum_v = landing_params["maximum_velocity"]
         self.landing_target = [0, 0, 0]
-        self.landing_attitude_limit = landing_params["landing_attitude_limit"]
+        self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
 
-        # self.q_lim = raise NotImplementedError
         self.omega_lim = np.array([0.2, 0.2, 0.2])
-
         self.waypoint = landing_params["waypoint"]
 
         # Renderer variables (pyvista)
@@ -179,20 +177,16 @@ class Rocket6DOF(Env):
         from the uniform distribution of the ICs
         """
 
+        self.atarg_history = []
         self.vtarg_history = []
+
         self.initial_condition = self.init_space.sample()
         self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])
+
         self.state = self.initial_condition
 
-        # Create a rotation object representing the attitude of the system
-        # assert (
-        #     np.linalg.norm(self.state[6:10]) == 1.0
-        # ), f"The quaternion doesn't have unit norm! It's components are {self.state[6:10]}"
-        
-
         self.rotation_obj = R.from_quat(self._scipy_quat_convention(self.state[6:10]))
-        if self.prev_rotation_obj is None:
-            self.prev_rotation_obj = self.rotation_obj
+       
         # instantiate the simulator object
         self.SIM = Simulator6DOF(self.initial_condition, self.timestep)
 
@@ -202,8 +196,15 @@ class Rocket6DOF(Env):
 
         self.action = self._denormalize_action(normalized_action)
 
-        self.state, isterminal, __ = self.SIM.step(self.action)
+        self.state, isterminal, = self.SIM.step(self.action)
         state = self.state.astype(np.float32)
+        
+        # Compute the target velocity and store it
+        __ = self._compute_atarg(
+            r=np.array(state[0:3]),
+            v=np.array(state[3:6]),
+            mass=state[-1],
+        )
 
         # Create a rotation object representing the attitude of the system
         self.prev_rotation_obj = self.rotation_obj
@@ -220,6 +221,7 @@ class Rocket6DOF(Env):
             "state_history": self.SIM.states,
             "action_history": self.SIM.actions,
             "timesteps": self.SIM.times,
+            **rewards_dict,
         }
 
         info["bounds_violation"] = self._check_bounds_violation(state)
@@ -243,57 +245,39 @@ class Rocket6DOF(Env):
 
             # Creating scene and loading the mesh
             self.plotter = pv.Plotter(args)
-            self._add_meshes_to_plotter()
+            self.plotter.show_axes()
+            self._add_meshes_to_plotter(resetting=True)
 
+            
+            # Set desired camera position
+            self.plotter.camera_position = [
+                (2.e+03,  1.e+01, -5.e+03),  
+                (1.e+03, -1.e+02, 4.5e+02),  
+                (1, 0, 0)
+                ]
+                
             self.plotter.show(
                 auto_close=False,
                 interactive=False,
                 # interactive_update=True,
             )
-
-            # Set desired camera position
-            cpos = [(783.93, -265.23, -1118.80),
-                    (262.5, 35.91, 35.91),
-                    (0.9150, 0.1524, 0.3734)]
-            self.plotter.camera_position = cpos
                 
-
-        # Move the rocket towards its new location
-        previous_loc = self.rocket_body_mesh.center
-        current_loc = self.state[0:3]
-
-        self.rocket_body_mesh.translate(current_loc - previous_loc, inplace=True)
-
-        # Rotate the rocket to the new attitude
-        step_rot_vector = self._get_step_rot_vec()
-        norm_step_rot = np.linalg.norm(step_rot_vector)  # This gives the rotation angle in [rad]
-
-        if norm_step_rot > 0:
-            self.rocket_body_mesh.rotate_vector(
-                vector=step_rot_vector / norm_step_rot,
-                angle=np.rad2deg(norm_step_rot),
-                inplace=True,
-                point=current_loc,
-            )
-
         # Redraw the thrust vector
-        self.plotter.remove_actor('thrust_vector')
+        self.plotter.remove_actor([
+            'thrust_vector',
+            "rocket_body"
+            ],
+            render=False
+            )
         
-        thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
-        arrow_kwargs = {'name': 'thrust_vector'}
-        
-        # self.plotter.add_arrows(
-        #     cent=thrust_vec_location,
-        #     direction=thrust_vector,
-        #     **arrow_kwargs
-        #     )
+        self._add_meshes_to_plotter()
 
         self.plotter.update()
 
         if mode == "rgb_array":
             return self.plotter.image
 
-    def _add_meshes_to_plotter(self):
+    def _add_meshes_to_plotter(self, resetting:bool = False):
         current_loc = self.state[0:3]
 
         self.rocket_body_mesh = pv.Cylinder(
@@ -304,28 +288,26 @@ class Rocket6DOF(Env):
         )
 
         self.landing_pad_mesh = pv.Circle(radius=self.target_r)
-        self.landing_pad_mesh.rotate_y(angle=90)
-        # current_vel=self.state[3:6]
+        self.landing_pad_mesh.rotate_y(angle=90,inplace=True)
 
-        # self.velocity_mesh = pv.Arrow(
-        #         start=current_loc,
-        #         direction=current_vel,
-        #         # scale='auto'
-        #         )
-        thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
+        # thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
+        thrust_vector = self.SIM.get_thrust_vector_inertial()
         arrow_kwargs = {'name': 'thrust_vector'}
 
-        self.plotter.add_arrows(
-            cent=thrust_vec_location,
-            direction=thrust_vector,
-            **arrow_kwargs
-            )
+        # self.plotter.add_arrows(
+        #     cent=thrust_vec_location,
+        #     direction=thrust_vector,
+        #     **arrow_kwargs
+        #     )
+        
+        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="#c8f7c5",name="rocket_body")
+        
+        # Turn landing pad green in case of succesfull landing
+        if all(self._check_landing(self.state).values()):  
+            self.plotter.add_mesh(self.landing_pad_mesh,color="#00ff00",name="landing_pad")
+        else:
+            self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")
 
-        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="orange")
-        self.plotter.add_mesh(self.landing_pad_mesh,color="red")
-
-        self.plotter.show_axes_all()
-        self.plotter.show_grid()
 
     def close(self) -> None:
         super().close()
@@ -333,15 +315,16 @@ class Rocket6DOF(Env):
         pv.close_all()
         return None
 
-    def _compute_reward(self, state, action):
+    def _compute_reward(self, state, denormalized_action):
         reward = 0
 
         r = state[0:3]
         v = state[3:6]
+        m = state[-1]
 
         v_targ, __ = self._compute_vtarg(r, v)
 
-        thrust = action[2]
+        thrust_magnitude = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
@@ -349,13 +332,13 @@ class Rocket6DOF(Env):
         # Compute each reward term
         rewards_dict = {
             "velocity_tracking": coeff["alfa"] * np.linalg.norm(v - v_targ),
-            "thrust_penalty": coeff["beta"] * thrust,
+            "thrust_penalty": coeff["beta"] * thrust_magnitude,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),
-            # "attitude_hint" : coeff["delta"]*np.maximum(0,abs(zeta)-zeta_mgn),
-            "rew_goal": self._reward_goal(state),
+            **self._reward_goal(state),
         }
 
+        
         reward = sum(rewards_dict.values())
 
         return reward, rewards_dict
@@ -365,9 +348,38 @@ class Rocket6DOF(Env):
         attitude_euler_angles = self.rotation_obj.as_euler("zyx")
         return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit)
 
-    def _reward_goal(self, obs):
-        k = self.reward_coefficients["kappa"]
-        return k * self._check_landing(obs)
+    def _reward_goal(self, state):
+        
+        r = np.linalg.norm(state[0:3])
+        v = np.linalg.norm(state[3:6])
+        q = state[6:10]
+        omega = state[10:13]
+
+        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
+
+        assert q.shape == (4,), omega.shape == (3,)
+
+        landing_conditions = {
+            "zero_height": state[0] <= 1e-3,
+            "velocity_limit": v < self.maximum_v,
+            "landing_radius": r < self.target_r,
+            "attitude_limit": np.any(
+                abs(attitude_euler_angles) < self.landing_attitude_limit
+            ),
+            "omega_limit": np.any(abs(omega) < self.omega_lim),
+        }
+
+        
+        k, w_r_f, w_v_f, max_r_f, max_v_f = list(map(self.reward_coefficients.get,
+                                            ["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
+                                            )
+
+
+        return {
+            'goal_conditions': k*all(landing_conditions.values()),
+            #'final_position': max(max_r_f-r,0)*w_r_f,
+            #'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
+        }
 
     def get_trajectory_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
@@ -424,11 +436,11 @@ class Rocket6DOF(Env):
         )
         return fig
 
-    def _vtarg_plotly_figure(self, trajectory_df: DataFrame):
+    def _atarg_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
         
-        # Create vtarg dataframe
-        vtarg_df = self.vtarg_to_dataframe()
+        # Create atarg dataframe
+        atarg_df = self.atarg_to_dataframe()
 
         fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z",)
 
@@ -439,17 +451,17 @@ class Rocket6DOF(Env):
 
         # Get a subset of the trajectory dataframe
         index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-2),num=30).astype(int)
-        reduced_trajectory_df = trajectory_df.iloc[index_list]
-        reduced_vtarg_df = vtarg_df.iloc[index_list]
+        downsampled_traj = trajectory_df.iloc[index_list]
+        downsampled_atarg = atarg_df.iloc[index_list]
 
         fig.add_cone(
-            x=reduced_trajectory_df["x"],
-            y=reduced_trajectory_df["y"],
-            z=reduced_trajectory_df["z"],
-            u=reduced_vtarg_df["v_x"],
-            v=reduced_vtarg_df["v_y"],
-            w=reduced_vtarg_df["v_z"],
-            sizeref=3,
+            x=downsampled_traj["x"],
+            y=downsampled_traj["y"],
+            z=downsampled_traj["z"],
+            u=downsampled_atarg['ax'],
+            v=downsampled_atarg['ay'],
+            w=downsampled_atarg['az'],
+            sizeref=8
         )
 
         fig.update_layout(
@@ -464,20 +476,9 @@ class Rocket6DOF(Env):
 
         return fig
 
-    def get_vtarg_plotly(self):
+    def get_atarg_plotly(self):
         trajectory_dataframe = self.states_to_dataframe()
-        return self._vtarg_plotly_figure(trajectory_dataframe)
-
-    def _plotly_fig2array(self, plotly_fig):
-        # convert Plotly fig to  an array
-        import io
-
-        from PIL import Image
-
-        fig_bytes = plotly_fig.to_image(format="png", width=800, height=800)
-        buf = io.BytesIO(fig_bytes)
-        img = Image.open(buf)
-        return np.asarray(img)
+        return self._atarg_figure(trajectory_dataframe)
 
     def _normalize_obs(self, obs):
         return (obs / self.state_normalizer).astype("float32")
@@ -502,6 +503,126 @@ class Rocket6DOF(Env):
     def _get_obs(self):
         return self._normalize_obs(self.state)
 
+    def _compute_atarg(self,r,v,mass):
+        
+        def __compute_t_go(r,v) -> float:
+            # In order to compute the t_go the following depressed
+            # quartic equation has to be solved:
+            # $g^2t_{go}^4-4||\mathbf{v}||^2t_{go}^2-24\mathbf{r}^t\mathbf{v}t_{go}-36||\mathbf{r}||^2=0
+
+            solutions = np.roots([
+                g[0]**2,
+                0,
+                -4*np.linalg.norm(v)**2,
+                -24*np.dot(r,v),
+                -36*np.linalg.norm(r)**2,
+                ])
+
+            real_positive_root = [n for n in solutions if (n.imag == 0 and n.real>0)][0].real
+
+            # Check that we have only one real solution
+            #assert len(real_positive_roots) == 1, 'Multiple real solutions to t_go equation'
+
+            return real_positive_root
+
+        g = [-9.81,0,0] # Gravitational vector
+
+        # Determine the time to go
+        t_go = __compute_t_go(r,v)
+    
+        def saturation(q,U) -> np.ndarray:
+            # Saturation function of vector q w.r.t magnitude U
+            q_norm = np.linalg.norm(q)
+            if q_norm<=U:
+                return q
+            else:
+                return q*U/q_norm
+
+        # Compute the saturated optimal target acceleration
+        a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g,self.max_thrust/mass)
+
+        self.atarg_history.append(a_targ)
+
+        return a_targ
+
+    def get_atarg(self):
+        return self.atarg_history[-1]
+
+    def states_to_dataframe(self):
+        import pandas as pd
+
+        return pd.DataFrame(self.SIM.states, columns=self.state_names)
+
+    def actions_to_dataframe(self):
+        import pandas as pd
+
+        return pd.DataFrame(self.SIM.actions, columns=self.action_names)
+
+    def atarg_to_dataframe(self):
+        import pandas as pd
+
+        return pd.DataFrame(self.atarg_history, columns=["ax", "ay", "az"])
+
+    def used_mass(self):
+        initial_mass = self.SIM.states[0][-1]
+        final_mass = self.SIM.states[-1][-1]
+        return initial_mass - final_mass
+
+    def _check_bounds_violation(self, state: ArrayLike):
+        r = np.float32(state[0:3])
+        return not bool(self.position_bounds_space.contains(r))
+
+    #TODO: delete
+    def _check_landing(self, state):
+
+        r = np.linalg.norm(state[0:3])
+        v = np.linalg.norm(state[3:6])
+        q = state[6:10]
+        omega = state[10:13]
+
+        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
+
+        assert q.shape == (4,), omega.shape == (3,)
+
+        landing_conditions = {
+            "zero_height": state[0] <= 1e-3,
+            "velocity_limit": v < self.maximum_v,
+            "landing_radius": r < self.target_r,
+            "attitude_limit": np.any(
+                abs(attitude_euler_angles) < self.landing_attitude_limit
+            ),
+            "omega_limit": np.any(abs(omega) < self.omega_lim),
+        }
+
+        return landing_conditions
+
+    def seed(self, seed: int = 42):
+        self.init_space.seed(seed)
+        return super().seed(seed)
+
+    def get_state(self):
+        return self.state
+
+    def _get_normalizer(self):
+        return self.state_normalizer
+
+    def _scipy_quat_convention(self, leading_scalar_quaternion):
+        # return TRAILING SCALAR CONVENTION
+        return np.roll(leading_scalar_quaternion, -1)
+
+    def get_keys_to_action(self):
+        import pygame
+
+        mapping = {
+            (
+                # pygame.K_RIGHT,
+                pygame.K_UP,
+            ): [0, 0, +1.0],
+            (pygame.K_DOWN,): [0, 0, -1.0],
+        }
+        return mapping
+
+    
     def _compute_vtarg(self, r, v):
         tau_1 = 20
         tau_2 = 100
@@ -532,88 +653,46 @@ class Rocket6DOF(Env):
 
         return v_targ, t_go
 
-    def get_vtarg(self,r,v):
-        return self._compute_vtarg(r,v)
+
+    def _vtarg_plot_figure(self, trajectory_df: DataFrame):
+        import plotly.express as px
         
-    def states_to_dataframe(self):
-        import pandas as pd
+        # Create vtarg dataframe
+        vtarg_df = self.vtarg_to_dataframe()
 
-        return pd.DataFrame(self.SIM.states, columns=self.state_names)
+        fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z")
 
-    def actions_to_dataframe(self):
-        import pandas as pd
+        # Set camera location
+        camera = dict(
+            up=dict(x=1, y=0, z=0),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0.5 * 1.25, y=1.25, z=0 * 1.25),
+        )
 
-        return pd.DataFrame(self.SIM.actions, columns=self.action_names)
+        fig.update_layout(scene_camera=camera)
+        x_f, y_f, z_f = self.landing_target
+
+        # Add landing pad location and velocity vector
+        fig.add_scatter3d(x=[x_f], y=[y_f], z=[z_f])
+        fig.add_cone(
+            x=trajectory_df["x"],
+            y=trajectory_df["y"],
+            z=trajectory_df["z"],
+            u=vtarg_df["v_x"], # TODO: CHANGE TO vtarg
+            v=vtarg_df["v_y"],
+            w=vtarg_df["v_z"],
+            sizeref=3,
+        )
+
+        fig.update_layout(scene_aspectmode='data')
+
+        return fig
+
+    def get_vtarg_trajectory(self):
+        trajectory_dataframe = self.states_to_dataframe()
+        return self._vtarg_plot_figure(trajectory_dataframe)
 
     def vtarg_to_dataframe(self):
         import pandas as pd
 
         return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z"])
-
-    def used_mass(self):
-        initial_mass = self.SIM.states[0][-1]
-        final_mass = self.SIM.states[-1][-1]
-        return initial_mass - final_mass
-
-    def _check_bounds_violation(self, state: ArrayLike):
-        r = np.float32(state[0:3])
-        return not bool(self.position_bounds_space.contains(r))
-
-    def _check_landing(self, state):
-
-        r = np.linalg.norm(state[0:3])
-        v = np.linalg.norm(state[3:6])
-        q = state[6:10]
-        omega = state[10:13]
-
-        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
-
-        assert q.shape == (4,), omega.shape == (3,)
-
-        landing_conditions = {
-            "zero_height": state[0] <= 1e-3,
-            "velocity_limit": v < self.maximum_v,
-            "landing_radius": r < self.target_r,
-            "attitude_limit": np.any(
-                abs(attitude_euler_angles) < self.landing_attitude_limit
-            ),
-            "omega_limit": np.any(abs(omega) < self.omega_lim),
-        }
-
-        return all(landing_conditions.values())
-
-    def seed(self, seed: int = 42):
-        self.init_space.seed(seed)
-        return super().seed(seed)
-
-    def _get_normalizer(self):
-        return self.state_normalizer
-
-    def _rotate_x_to_z(self, vector: ArrayLike):
-        ROT_MAT = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
-
-        return ROT_MAT @ vector
-
-    def _scipy_quat_convention(self, leading_scalar_quaternion):
-        # return TRAILING SCALAR CONVENTION
-        return np.roll(leading_scalar_quaternion, -1)
-
-    def _get_step_rot_vec(self) -> np.ndarray:
-        """
-        Compute the incremental rotation vector
-        by which to rotate the body at each time step
-        """
-        step_rotation = self.rotation_obj * self.prev_rotation_obj.inv()
-        return step_rotation.as_rotvec()
-
-    def get_keys_to_action(self):
-        import pygame
-
-        mapping = {
-            (
-                # pygame.K_RIGHT,
-                pygame.K_UP,
-            ): [0, 0, +1.0],
-            (pygame.K_DOWN,): [0, 0, -1.0],
-        }
-        return mapping

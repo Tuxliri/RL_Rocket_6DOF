@@ -5,12 +5,14 @@ from my_environment.envs import Rocket6DOF
 from gym.utils.play import play, PlayPlot
 
 # Import the initial conditions from the setup file
-from configuration_file import env_config
+import yaml
+from yaml.loader import SafeLoader
 
-env_config["IC"] = [500, 100, 100, -50, 0, 0, 1, 0, 0, 0, 0, 0, 0, 45e3]
-env_config["ICRange"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-
+with open("config.yaml") as f:
+    config=yaml.load(f,Loader=SafeLoader)
+    sb3_config = config["sb3_config"]
+    env_config = config["env_config"]
+    
 # Instantiate the environment
 kwargs = env_config
 env = Rocket6DOF(**kwargs)
@@ -22,4 +24,4 @@ def callback(obs_t, obs_tp1, action, rew, done, info):
 plotter = PlayPlot(callback, 30 * 20, ["reward"])
 
 
-play(env,callback=plotter.callback)
+play(env,callback=plotter.callback,fps=1/env_config["timestep"])

@@ -176,3 +176,6 @@ Videos
 .dockerignore
 Dockerfile
 main.prof
+
+# Plotly figures
+*.plotly.json

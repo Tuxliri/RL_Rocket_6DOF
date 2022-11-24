@@ -70,15 +70,24 @@ def make_annealed_env():
 def make_eval_env():
     kwargs = env_config
     training_env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-    training_env = ClipReward(TimeLimit(
-        training_env,
-        max_episode_steps=MAX_EPISODE_STEPS
-        )
-    )
+
     return Monitor(
         EpisodeAnalyzer(training_env),)
         
+def make_annealed_eval_env():
+    kwargs = env_config
+    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
 
+    # ADD REWARD ANNEALING
+    env = RewardAnnealing(env)
+
+    env = TimeLimit(
+        env,
+        max_episode_steps=MAX_EPISODE_STEPS
+        )
+    return Monitor(
+        EpisodeAnalyzer(env),)   
+    
 def start_training():
 
     # Check if the system has a display, if not start a virtual framebuffer

@@ -45,7 +45,11 @@ class RewardAnnealing(gym.Wrapper):
         obs, __, done, info = super().step(action)
         
         old_rewards_dict = info["rewards_dict"]
-        new_rewards = ["attitude_constraint", "goal_conditions"]
+        new_rewards = [
+            "attitude_constraint",
+            "goal_conditions",
+            'final_position',
+            'final_velocity']
         rewards_dict = {key: old_rewards_dict[key] for key in new_rewards}
 
         rewards_dict["thrust_penalty"] = -self.xi*(action[2]+1)

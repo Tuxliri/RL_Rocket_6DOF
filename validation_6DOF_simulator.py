@@ -78,7 +78,7 @@ mass = ["mass"]
 
 state_labels = [r,v,omega,q,mass]
 
-RELATIVE_ERROR = False
+RELATIVE_ERROR = True
 
 for state in state_labels:
     if RELATIVE_ERROR:
@@ -103,7 +103,7 @@ if RELATIVE_ERROR:
         R"$m_{err}$",
     ]
     plt.ylabel(r'$\epsilon_{rel}$')
-    plot_name = "validation_error_plot_rel.png"
+    plot_name = "validation_error_plot_rel_ISA.png"
 else:
     legend = [
         R"$||\bm{r}_{err}||\;[m]$",
@@ -113,7 +113,7 @@ else:
         R"$m_{err}\;[kg]$",
     ]
     plt.ylabel(r'$\epsilon_{abs}$')
-    plot_name = "validation_error_plot_abs.png"
+    plot_name = "validation_error_plot_abs_ISA.png"
 
 
 ax.legend(legend)

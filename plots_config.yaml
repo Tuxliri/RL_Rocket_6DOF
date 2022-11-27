@@ -1,0 +1,23 @@
+Realistic_ICs:
+  figures_path: realistic-IC-with-dispersion
+  id: 3c85cvzp
+  plot_objects:
+    plots3d/trajectory:
+      camera_distance: 2.5
+      ticksuffix:  m/s
+    plots3d/atarg_trajectory:
+      camera_distance: 5
+      ticksuffix:  m/s²
+
+
+  step_good_episode: 11118
+  
+# Simplified_ICs:
+#   camera_distance: 2.5
+#   camera_distance_acceleration: 2.5
+#   figures_path: simplified-IC-with-dispersion
+#   id: NaN
+#   plot_names:
+#   - plots3d/trajectory
+#   - plots3d/vtarg_trajectory
+#   step_good_episode: NaN

@@ -64,7 +64,12 @@ class Simulator6DOF():
         self.r_cp_B = [5,0,0]
 
     def step(self, u):
-
+        """
+        Method stepping the environment of a timestep dt
+        :param      u: control vector with [delta_y,delta_z,thrust] [rad,rad,N]
+        :returns:   state: array containing the state,
+                    solution.status: flag indicating status os SciPy ivp solver
+        """    
         
         def _height_event(t, y):
             return y[0]

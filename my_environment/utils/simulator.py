@@ -5,7 +5,6 @@ import numpy as np
 from scipy.spatial.transform.rotation import Rotation
 from scipy.integrate import solve_ivp
 
-
 class Simulator6DOF():
     def __init__(self, IC : np.ndarray, dt=0.5) -> None:
         super(Simulator6DOF, self).__init__()
@@ -56,8 +55,12 @@ class Simulator6DOF():
             [0.82,0.82,0.82]
             )
         self.S_ref = np.pi*self.base_radius**2  # Reference aerodynamic surface [m**2]
-        self.H_r = 7160                         # Scale height factor [m]
         self.rho_0 = 1.225
+        self.T_b = 288.15                       # base temperature [K]
+        self.L_b = -0.0065                        # Lapse rate [K/m]
+        self.h_b = 0                            # Layer base height [m]
+        self.M = 0.0289644                      # Earth's air molar mass [kg/mol]
+        self.R_star = 8.3144598                 # Universal gas constant [N·m/(mol·K)]
 
         # Geometric properties
         self.r_T_B = [-15, 0, 0]
@@ -108,7 +111,9 @@ class Simulator6DOF():
         mass = state[13]
 
         # Implement getting it from the height (y)
-        rho = self.rho_0*np.exp(-r_inertial[0]/self.H_r)
+        height = r_inertial[0]
+        
+        rho = self._get_atmosferic_density(height)
 
         
         g_I = [-self.g0,0,0]
@@ -131,6 +136,13 @@ class Simulator6DOF():
         dm = -thrust_magnitude/(self.g0*self.Isp)
         
         return np.concatenate([dr, dv, dq, dom, [dm]])
+
+    def _get_atmosferic_density(self, h):
+        rho = self.rho_0*(self.T_b/(self.T_b+(h-self.h_b)*self.L_b))**(
+            1+self.g0*self.M/self.R_star/self.L_b
+            )
+            
+        return rho
 
 
     def _normalize_quaternion(self,q):

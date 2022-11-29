@@ -71,8 +71,7 @@ def make_eval_env():
     kwargs = env_config
     training_env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
 
-    return Monitor(
-        EpisodeAnalyzer(training_env),)
+    return Monitor(EpisodeAnalyzer(training_env))
         
 def make_annealed_eval_env():
     kwargs = env_config
@@ -111,7 +110,7 @@ def start_training():
         tensorboard_log=f"runs/{run.id}",
         verbose=2,
         seed=env_config["seed"],
-        ent_coef=0.01,
+        policy_kwargs={'net_arch': [128, 64]}
         )
     
     eval_env =  make_eval_env()
@@ -119,7 +118,7 @@ def start_training():
     callbacksList = [
         EvalCallback(
             eval_env,
-            eval_freq = int(50e3),
+            eval_freq = int(100e3),
             n_eval_episodes = 15,
             render=False,
             deterministic=True,
@@ -139,15 +138,15 @@ def start_training():
         callback=callbacksList
     )
     
-    annealed_env = make_annealed_env()
+    #annealed_env = make_annealed_env()
 
-    model.set_env(annealed_env)
+    #model.set_env(annealed_env)
 
     # Train the ANNEALED model
-    model.learn(
-        total_timesteps=sb3_config["total_timesteps"],
-        callback=callbacksList
-    )
+    # model.learn(
+    #     total_timesteps=sb3_config["total_timesteps"],
+    #     callback=callbacksList
+    # )
     
     run.finish()
 

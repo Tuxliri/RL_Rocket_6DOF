@@ -43,7 +43,7 @@ class ClipReward(gym.RewardWrapper):
 
 def make_env():
     kwargs = env_config
-    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
+    env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
     env = TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
@@ -69,7 +69,7 @@ def make_annealed_env():
 
 def make_eval_env():
     kwargs = env_config
-    training_env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
+    training_env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
 
     return Monitor(EpisodeAnalyzer(training_env))
         

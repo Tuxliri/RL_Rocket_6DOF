@@ -25,6 +25,7 @@ class Rocket6DOF(Env):
         ICRange=[50, 10, 10, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1e3],
         timestep=0.1,
         seed=42,
+        reward_shaping_type='acceleration',
         reward_coeff={
             "alfa": -0.01,
             "beta": -1e-8,
@@ -171,6 +172,11 @@ class Rocket6DOF(Env):
         self.landing_pad_mesh = None
         self.plotter = None
 
+        # Reward function shaper selection
+        self.shaping_type = reward_shaping_type
+
+        # assert [check that the shaping_type exists!]
+
     def reset(self):
         """Function defining the reset method of gym
         It returns an initial observation drawn randomly
@@ -186,7 +192,7 @@ class Rocket6DOF(Env):
         self.state = self.initial_condition
 
         self.rotation_obj = R.from_quat(self._scipy_quat_convention(self.state[6:10]))
-       
+
         # instantiate the simulator object
         self.SIM = Simulator6DOF(self.initial_condition, self.timestep)
 
@@ -198,13 +204,6 @@ class Rocket6DOF(Env):
 
         self.state, isterminal, = self.SIM.step(self.action)
         state = self.state.astype(np.float32)
-        
-        # Compute the target velocity and store it
-        __ = self._compute_atarg(
-            r=np.array(state[0:3]),
-            v=np.array(state[3:6]),
-            mass=state[-1],
-        )
 
         # Create a rotation object representing the attitude of the system
         self.prev_rotation_obj = self.rotation_obj
@@ -322,16 +321,37 @@ class Rocket6DOF(Env):
         v = state[3:6]
         m = state[-1]
 
-        v_targ, __ = self._compute_vtarg(r, v)
+        
 
         thrust_magnitude = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
 
+        if self.shaping_type == 'acceleration':
+            # Compute the target acceleration and store it
+            __ = self._compute_atarg(
+                r=np.array(r),
+                v=np.array(v),
+                mass=m,
+            )
+
+            thrust_vec = self.SIM.get_thrust_vector_inertial()
+            a = thrust_vec/m
+            a_targ = self.get_atarg()
+            shaping_target_reward_dict = {
+                "atarg_tracking" : coeff["alfa"] * np.linalg.norm(a - a_targ)
+                }
+        elif self.shaping_type == 'velocity':
+            # Compute the target velocity and store it
+            v_targ, __ = self._compute_vtarg(r, v)
+            shaping_target_reward_dict = {
+                "vtarg_tracking" : coeff["alfa"] * np.linalg.norm(v-v_targ)
+                }
+                
         # Compute each reward term
         rewards_dict = {
-            "velocity_tracking": coeff["alfa"] * np.linalg.norm(v - v_targ),
+            **shaping_target_reward_dict,
             "thrust_penalty": coeff["beta"] * thrust_magnitude,
             "eta": coeff["eta"],
             "attitude_constraint": self._check_attitude_limits(),

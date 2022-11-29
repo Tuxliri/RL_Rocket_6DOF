@@ -67,7 +67,7 @@ class EpisodeAnalyzer(gym.Wrapper):
         
         #assert isinstance(env.unwrapped, Rocket6DOF)
         self.rewards_info = []
-
+        
     def step(self, action):
         obs, rew, done, info = super().step(action)
         
@@ -79,19 +79,26 @@ class EpisodeAnalyzer(gym.Wrapper):
             fig = self.env.unwrapped.get_trajectory_plotly()
             states_dataframe = self.env.unwrapped.states_to_dataframe()
             actions_dataframe = self.env.unwrapped.actions_to_dataframe()
-            vtarg_dataframe = self.env.unwrapped.vtarg_to_dataframe()
+            
             rewards_dataframe = pd.DataFrame(self.rewards_info)
+            if self.env.unwrapped.shaping_type == 'velocity':
+                shaper_dataframe = self.env.unwrapped.vtarg_to_dataframe()
+                shaper_name = "ep_history/atarg"
+            elif self.env.unwrapped.shaping_type == 'acceleration':
+                shaper_dataframe = self.env.unwrapped.atarg_to_dataframe()
+                shaper_name = "ep_history/atarg"
 
             names = self.env.unwrapped.state_names
             values = np.abs(states_dataframe.iloc[-1,:])
             final_errors_dict = {'final_errors/'+ n : v for n,v in zip(names, values)}
 
             if wandb.run is not None:
+                
                 wandb.log(
                     {
                         "ep_history/states": states_dataframe.plot(),
                         "ep_history/actions": actions_dataframe.plot(),
-                        "ep_history/vtarg": vtarg_dataframe.plot(),
+                        shaper_name: shaper_dataframe.plot(),
                         "ep_history/rewards": rewards_dataframe.drop('time',axis=1).plot(),
                         "plots3d/atarg_trajectory": self.env.unwrapped.get_atarg_plotly(),
                         "plots3d/trajectory": fig,

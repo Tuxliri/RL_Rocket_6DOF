@@ -25,6 +25,6 @@ To run the algorithm in a Docker container follow these steps:
 1. Clone the repository
 
 2. Build the docker image `docker build -t rl_rocket_docker .`
-3. Get your Wandb API key from wandb.ai/authorise
+3. Get your Wandb API key from [wandb.ai/authorise](https://www.wandb.ai/authorise)
 4. Start the docker container passing the API key as an environmental variable (paste it in place of `$YOUR_API_KEY$`)
 `docker run -e WANDB_API_KEY=$YOUR_API_KEY$ -it rl_rocket_docker`

@@ -19,3 +19,12 @@ The environment employes a continuous action space, with the engine allowed to t
 5. Different reward functions definitions
 6. Results in 3DOF
 7. Results in 6DOF
+
+# Docker
+To run the algorithm in a Docker container follow these steps:
+1. Clone the repository
+
+2. Build the docker image `docker build -t rl_rocket_docker .`
+3. Get your Wandb API key from wandb.ai/authorise
+4. Start the docker container passing the API key as an environmental variable (paste it in place of `$YOUR_API_KEY$`)
+`docker run -e WANDB_API_KEY=$YOUR_API_KEY$ -it rl_rocket_docker`

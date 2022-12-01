@@ -7,9 +7,13 @@ COPY config.yaml .
 COPY main_6DOF.py .
 COPY setup.py .
 COPY requirements.txt .
+COPY docker_startup.sh .
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -e .
-RUN wandb login 0cbac35bfe601a8c17f4132f2fb22bb9a9b03e40
 
-CMD ["python", "main_6DOF.py"]
+# Make the start script executable
+RUN ["chmod", "+x", "./docker_startup.sh"]
+
+# The API key MUST be passed as an environmental variable to the container
+ENTRYPOINT [ "./docker_startup.sh" ]

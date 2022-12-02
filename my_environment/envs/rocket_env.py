@@ -156,13 +156,13 @@ class Rocket6DOF(Env):
         self.vtarg_history = []
 
         # Trajectory constratints
-        self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
+        self.attitude_traj_limit_degrees = trajectory_limits["attitude_limit"]
 
         # Landing parameters
         self.target_r = landing_params["landing_radius"]
         self.maximum_v = landing_params["maximum_velocity"]
         self.landing_target = [0, 0, 0]
-        self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
+        self.landing_attitude_limit = landing_params["landing_attitude_limit"]
 
         self.omega_lim = np.array([0.2, 0.2, 0.2])
         self.waypoint = landing_params["waypoint"]
@@ -321,23 +321,21 @@ class Rocket6DOF(Env):
         v = state[3:6]
         m = state[-1]
 
-        
-
         thrust_magnitude = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
 
         if self.shaping_type == 'acceleration':
-            # Compute the target acceleration and store it
+            # Compute the target acceleration and store it in history
             __ = self._compute_atarg(
                 r=np.array(r),
                 v=np.array(v),
                 mass=m,
             )
 
-            thrust_vec = self.SIM.get_thrust_vector_inertial()
-            a = thrust_vec/m
+            thrust_vector = self.SIM.get_thrust_vector_inertial()
+            a = thrust_vector/m
             a_targ = self.get_atarg()
             shaping_target_reward_dict = {
                 "atarg_tracking" : coeff["alfa"] * np.linalg.norm(a - a_targ)
@@ -358,47 +356,47 @@ class Rocket6DOF(Env):
             **self._reward_goal(state),
         }
 
-        
+        if r[0] < self.waypoint:
+            rewards_dict["acceleration_tracking"] = 0
+
         reward = sum(rewards_dict.values())
 
         return reward, rewards_dict
 
     def _check_attitude_limits(self):
         gamma = self.reward_coefficients["gamma"]
-        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
-        return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit)
+        attitude_euler_angles = self.rotation_obj.as_euler("XYZ",degrees=True)
+        return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit_degrees)
 
     def _reward_goal(self, state):
         
-        r = np.linalg.norm(state[0:3])
-        v = np.linalg.norm(state[3:6])
-        q = state[6:10]
+        position_error = np.linalg.norm(state[0:3])
+        velocity_error = np.linalg.norm(state[3:6])
         omega = state[10:13]
 
-        attitude_euler_angles = self.rotation_obj.as_euler("zyx")
-
-        assert q.shape == (4,), omega.shape == (3,)
+        attitude_euler_angles = self.rotation_obj.as_euler("XYZ",degrees=True)
 
         landing_conditions = {
             "zero_height": state[0] <= 1e-3,
-            "velocity_limit": v < self.maximum_v,
-            "landing_radius": r < self.target_r,
+            "velocity_limit": velocity_error < self.maximum_v,
+            "landing_radius": position_error < self.target_r,
             "attitude_limit": np.any(
                 abs(attitude_euler_angles) < self.landing_attitude_limit
             ),
             "omega_limit": np.any(abs(omega) < self.omega_lim),
         }
-
         
-        k, w_r_f, w_v_f, max_r_f, max_v_f = list(map(self.reward_coefficients.get,
-                                            ["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
+        k, w_final, max_r_f, max_v_f = list(map(self.reward_coefficients.get,
+                                            ["kappa","w_final","max_r_f", "max_v_f"])
                                             )
-
+        
+        final_reward=0
+        if landing_conditions["zero_height"]:
+            final_reward = w_final * max(1 - position_error/max_r_f, 0) * max(1 - velocity_error/max_v_f, 0)
 
         return {
             'goal_conditions': k*all(landing_conditions.values()),
-            'final_position': max(max_r_f-r,0)*w_r_f,
-            'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
+            'final_reward': final_reward,
         }
 
     def get_trajectory_plotly(self):

@@ -42,8 +42,7 @@ env_config:
     gamma: -10
     kappa: 10
     xi: 0.004
-    w_r_f : 0       # SET TO 0 TO DISABLE TERMINAL REWARD
-    w_v_f : 0.75       # SET TO 0 TO DISABLE TERMINAL REWARD
+    w_final : 50
     max_r_f: 100
     max_v_f: 50
 
@@ -51,14 +50,11 @@ env_config:
     attitude_limit: [85, 85, 360]
   
   landing_params: 
-    waypoint: -1
-    landing_radius: 30
-    maximum_velocity: 10
+    waypoint: 50
+    landing_radius: 50
+    maximum_velocity: 15
     landing_attitude_limit: [10 , 10, 360,]
-    # [Yaw, Pitch, Roll] in DEG,
-    # rotations order zyx
-    # VISUALIZATION:
-    # https://bit.ly/3CoEdvH
+    # [XYZ] intrinsic rotation order i.e. roll,pitch,yaw
     omega_lim: [0.2, 0.2, 0.2]      
   reward_shaping_type: 'acceleration'
 

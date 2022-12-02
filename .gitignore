@@ -171,9 +171,7 @@ cython_debug/
 Videos
 
 .csv
-.vscode/launch.json
-.vscode/tasks.json
-main.prof
+.vscode
 
 # Plotly figures
 *.plotly.json

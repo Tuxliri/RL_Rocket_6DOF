@@ -1,12 +1,9 @@
 import os
 
-import torch
-
-import my_environment
 import gym
 import wandb
 
-from gym.wrappers import TimeLimit, RecordVideo
+from gym.wrappers import TimeLimit
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
@@ -43,7 +40,9 @@ class ClipReward(gym.RewardWrapper):
 
 def make_env():
     kwargs = env_config
-    env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
+    env = RemoveMassFromObs(
+        gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+        )
     env = TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
@@ -69,7 +68,9 @@ def make_annealed_env():
 
 def make_eval_env():
     kwargs = env_config
-    training_env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
+    training_env = RemoveMassFromObs(
+        gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+        )
 
     return Monitor(EpisodeAnalyzer(training_env))
         

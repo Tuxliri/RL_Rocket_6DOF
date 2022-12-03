@@ -39,7 +39,7 @@ env_config:
     beta: -1.0E-8
     delta: -5
     eta: 0.1
-    gamma: -10
+    gamma: -1
     kappa: 10
     xi: 0.004
     w_final : 50

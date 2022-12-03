@@ -350,7 +350,7 @@ class Rocket6DOF(Env):
         }
 
         if r[0] < self.waypoint:
-            rewards_dict["acceleration_tracking"] = 0
+            rewards_dict["atarg_tracking"] = 0
 
         reward = sum(rewards_dict.values())
 

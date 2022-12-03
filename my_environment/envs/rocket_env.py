@@ -264,13 +264,16 @@ class Rocket6DOF(Env):
         # Redraw the thrust vector
         self.plotter.remove_actor([
             'thrust_vector',
-            "rocket_body"
+            "rocket_body",
+            "debug_text",
             ],
             render=False
             )
         
         self._add_meshes_to_plotter()
-
+        X,Y,Z = self.rotation_obj.as_euler('XYZ',degrees=True)
+        debug_string = f"Attitude angles [XYZ]\n {X:.1f} \n {Y:.1f} \n {Z:.1f}"
+        self.plotter.add_text(debug_string,render=False,name="debug_text")
         self.plotter.update()
 
         if mode == "rgb_array":
@@ -288,16 +291,6 @@ class Rocket6DOF(Env):
 
         self.landing_pad_mesh = pv.Circle(radius=self.target_r)
         self.landing_pad_mesh.rotate_y(angle=90,inplace=True)
-
-        # thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
-        thrust_vector = self.SIM.get_thrust_vector_inertial()
-        arrow_kwargs = {'name': 'thrust_vector'}
-
-        # self.plotter.add_arrows(
-        #     cent=thrust_vec_location,
-        #     direction=thrust_vector,
-        #     **arrow_kwargs
-        #     )
         
         self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="#c8f7c5",name="rocket_body")
         

@@ -47,14 +47,14 @@ env_config:
     max_v_f: 50
 
   trajectory_limits: 
-    attitude_limit: [85, 85, 360]
+    attitude_limit: [360,85,85,]
   
   landing_params: 
     waypoint: 50
     landing_radius: 50
     maximum_velocity: 15
-    landing_attitude_limit: [10 , 10, 360,]
-    # [XYZ] intrinsic rotation order i.e. roll,pitch,yaw
+    landing_attitude_limit: [360,10,10,]
+    # [XYZ] intrinsic rotation order i.e. yaw,pitch,roll
     omega_lim: [0.2, 0.2, 0.2]      
   reward_shaping_type: 'acceleration'
 

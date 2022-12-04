@@ -113,6 +113,7 @@ def start_training():
         seed=env_config["seed"],
         policy_kwargs={'net_arch': [128, 64]},
         batch_size=512,
+        n_steps=16384,
         )
     
     eval_env =  make_eval_env()

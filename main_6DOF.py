@@ -112,8 +112,8 @@ def start_training():
         verbose=2,
         seed=env_config["seed"],
         policy_kwargs={'net_arch': [128, 64]},
-        batch_size=512,
-        n_steps=16384,
+        batch_size=2048,
+        n_steps=65536,
         )
     
     eval_env =  make_eval_env()

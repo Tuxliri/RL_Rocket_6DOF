@@ -1,7 +1,7 @@
 __all__ = ["Rocket6DOF"]
 
 # This is the gym environment to test the RL algorithms
-# on the rocket landing control problem. It is the real 
+# on the rocket landing control problem. It is the real
 # 6DOF dynamics
 
 import numpy as np
@@ -17,7 +17,7 @@ class Rocket6DOF(Env):
 
     """Simple environment simulating a 6DOF rocket"""
 
-    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 1/0.1}
+    metadata = {"render.modes": ["human", "rgb_array"], "render_fps": 1 / 0.1}
 
     def __init__(
         self,
@@ -25,7 +25,7 @@ class Rocket6DOF(Env):
         ICRange=[50, 10, 10, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1e3],
         timestep=0.1,
         seed=42,
-        reward_shaping_type='acceleration',
+        reward_shaping_type="acceleration",
         reward_coeff={
             "alfa": -0.01,
             "beta": -1e-8,
@@ -33,8 +33,8 @@ class Rocket6DOF(Env):
             "gamma": -10,
             "delta": -5,
             "kappa": 10,
-            "w_r_f" : 1,
-            "w_v_f" : 5,
+            "w_r_f": 1,
+            "w_v_f": 5,
             "max_r_f": 100,
             "max_v_f": 100,
         },
@@ -42,7 +42,11 @@ class Rocket6DOF(Env):
         landing_params={
             "landing_radius": 30,
             "maximum_velocity": 15,
-            "landing_attitude_limit": [10 , 10, 360,],  # [Yaw, Pitch, Roll],
+            "landing_attitude_limit": [
+                10,
+                10,
+                360,
+            ],  # [Yaw, Pitch, Roll],
             "omega_lim": [0.2, 0.2, 0.2],
         },
     ) -> None:
@@ -155,14 +159,16 @@ class Rocket6DOF(Env):
         self.atarg_history = []
         self.vtarg_history = []
 
-        # Trajectory constratints
+        # Trajectory constraints
         self.attitude_traj_limit = np.deg2rad(trajectory_limits["attitude_limit"])
 
         # Landing parameters
         self.target_r = landing_params["landing_radius"]
         self.maximum_v = landing_params["maximum_velocity"]
         self.landing_target = [0, 0, 0]
-        self.landing_attitude_limit = np.deg2rad(landing_params["landing_attitude_limit"])
+        self.landing_attitude_limit = np.deg2rad(
+            landing_params["landing_attitude_limit"]
+        )
 
         self.omega_lim = np.array([0.2, 0.2, 0.2])
         self.waypoint = landing_params["waypoint"]
@@ -187,7 +193,9 @@ class Rocket6DOF(Env):
         self.vtarg_history = []
 
         self.initial_condition = self.init_space.sample()
-        self.initial_condition[6:10]=self.initial_condition[6:10]/np.linalg.norm(self.initial_condition[6:10])
+        self.initial_condition[6:10] = self.initial_condition[6:10] / np.linalg.norm(
+            self.initial_condition[6:10]
+        )
 
         self.state = self.initial_condition
 
@@ -202,7 +210,10 @@ class Rocket6DOF(Env):
 
         self.action = self._denormalize_action(normalized_action)
 
-        self.state, isterminal, = self.SIM.step(self.action)
+        (
+            self.state,
+            isterminal,
+        ) = self.SIM.step(self.action)
         state = self.state.astype(np.float32)
 
         # Create a rotation object representing the attitude of the system
@@ -247,28 +258,22 @@ class Rocket6DOF(Env):
             self.plotter.show_axes()
             self._add_meshes_to_plotter(resetting=True)
 
-            
             # Set desired camera position
             self.plotter.camera_position = [
-                (2.e+03,  1.e+01, -5.e+03),  
-                (1.e+03, -1.e+02, 4.5e+02),  
-                (1, 0, 0)
-                ]
-                
+                (2.0e03, 1.0e01, -5.0e03),
+                (1.0e03, -1.0e02, 4.5e02),
+                (1, 0, 0),
+            ]
+
             self.plotter.show(
                 auto_close=False,
                 interactive=False,
                 # interactive_update=True,
             )
-                
+
         # Redraw the thrust vector
-        self.plotter.remove_actor([
-            'thrust_vector',
-            "rocket_body"
-            ],
-            render=False
-            )
-        
+        self.plotter.remove_actor(["thrust_vector", "rocket_body"], render=False)
+
         self._add_meshes_to_plotter()
 
         self.plotter.update()
@@ -276,7 +281,7 @@ class Rocket6DOF(Env):
         if mode == "rgb_array":
             return self.plotter.image
 
-    def _add_meshes_to_plotter(self, resetting:bool = False):
+    def _add_meshes_to_plotter(self, resetting: bool = False):
         current_loc = self.state[0:3]
 
         self.rocket_body_mesh = pv.Cylinder(
@@ -287,26 +292,34 @@ class Rocket6DOF(Env):
         )
 
         self.landing_pad_mesh = pv.Circle(radius=self.target_r)
-        self.landing_pad_mesh.rotate_y(angle=90,inplace=True)
+        self.landing_pad_mesh.rotate_y(angle=90, inplace=True)
 
         # thrust_vector, thrust_vec_location, = self.SIM.get_thrust_vector_inertial()
         thrust_vector = self.SIM.get_thrust_vector_inertial()
-        arrow_kwargs = {'name': 'thrust_vector'}
+        arrow_kwargs = {"name": "thrust_vector"}
 
         # self.plotter.add_arrows(
         #     cent=thrust_vec_location,
         #     direction=thrust_vector,
         #     **arrow_kwargs
         #     )
-        
-        self.plotter.add_mesh(self.rocket_body_mesh,show_scalar_bar=False,color="#c8f7c5",name="rocket_body")
-        
-        # Turn landing pad green in case of succesfull landing
-        if all(self._check_landing(self.state).values()):  
-            self.plotter.add_mesh(self.landing_pad_mesh,color="#00ff00",name="landing_pad")
-        else:
-            self.plotter.add_mesh(self.landing_pad_mesh,color="red",name="landing_pad")
 
+        self.plotter.add_mesh(
+            self.rocket_body_mesh,
+            show_scalar_bar=False,
+            color="#c8f7c5",
+            name="rocket_body",
+        )
+
+        # Turn landing pad green in case of succesfull landing
+        if all(self._check_landing(self.state).values()):
+            self.plotter.add_mesh(
+                self.landing_pad_mesh, color="#00ff00", name="landing_pad"
+            )
+        else:
+            self.plotter.add_mesh(
+                self.landing_pad_mesh, color="red", name="landing_pad"
+            )
 
     def close(self) -> None:
         super().close()
@@ -321,14 +334,12 @@ class Rocket6DOF(Env):
         v = state[3:6]
         m = state[-1]
 
-        
-
         thrust_magnitude = denormalized_action[2]
 
         # Coefficients
         coeff = self.reward_coefficients
 
-        if self.shaping_type == 'acceleration':
+        if self.shaping_type == "acceleration":
             # Compute the target acceleration and store it
             __ = self._compute_atarg(
                 r=np.array(r),
@@ -337,18 +348,18 @@ class Rocket6DOF(Env):
             )
 
             thrust_vec = self.SIM.get_thrust_vector_inertial()
-            a = thrust_vec/m
+            a = thrust_vec / m
             a_targ = self.get_atarg()
             shaping_target_reward_dict = {
-                "atarg_tracking" : coeff["alfa"] * np.linalg.norm(a - a_targ)
-                }
-        elif self.shaping_type == 'velocity':
+                "atarg_tracking": coeff["alfa"] * np.linalg.norm(a - a_targ)
+            }
+        elif self.shaping_type == "velocity":
             # Compute the target velocity and store it
             v_targ, __ = self._compute_vtarg(r, v)
             shaping_target_reward_dict = {
-                "vtarg_tracking" : coeff["alfa"] * np.linalg.norm(v-v_targ)
-                }
-                
+                "vtarg_tracking": coeff["alfa"] * np.linalg.norm(v - v_targ)
+            }
+
         # Compute each reward term
         rewards_dict = {
             **shaping_target_reward_dict,
@@ -358,7 +369,6 @@ class Rocket6DOF(Env):
             **self._reward_goal(state),
         }
 
-        
         reward = sum(rewards_dict.values())
 
         return reward, rewards_dict
@@ -369,7 +379,7 @@ class Rocket6DOF(Env):
         return gamma * np.any(np.abs(attitude_euler_angles) > self.attitude_traj_limit)
 
     def _reward_goal(self, state):
-        
+
         r = np.linalg.norm(state[0:3])
         v = np.linalg.norm(state[3:6])
         q = state[6:10]
@@ -389,16 +399,19 @@ class Rocket6DOF(Env):
             "omega_limit": np.any(abs(omega) < self.omega_lim),
         }
 
-        
-        k, w_r_f, w_v_f, max_r_f, max_v_f = list(map(self.reward_coefficients.get,
-                                            ["kappa","w_r_f", "w_v_f","max_r_f", "max_v_f"])
-                                            )
-
+        k, w_r_f, w_v_f, max_r_f, max_v_f = list(
+            map(
+                self.reward_coefficients.get,
+                ["kappa", "w_r_f", "w_v_f", "max_r_f", "max_v_f"],
+            )
+        )
 
         return {
-            'goal_conditions': k*all(landing_conditions.values()),
-            'final_position': max(max_r_f-r,0)*w_r_f,
-            'final_velocity': max(max_v_f-v,0)*w_v_f if (r<max_r_f and landing_conditions["zero_height"]) else 0,
+            "goal_conditions": k * all(landing_conditions.values()),
+            "final_position": max(max_r_f - r, 0) * w_r_f,
+            "final_velocity": max(max_v_f - v, 0) * w_v_f
+            if (r < max_r_f and landing_conditions["zero_height"])
+            else 0,
         }
 
     def get_trajectory_plotly(self):
@@ -422,16 +435,18 @@ class Rocket6DOF(Env):
         fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z")
 
         # Add landing pad location and velocity vectors
-        z = np.linspace(-self.target_r,self.target_r,100)
-        y = np.linspace(-self.target_r,self.target_r,100)
-        
-        zv,yv = np.meshgrid(z,y)
-        xv=1.*(zv**2+yv**2<self.target_r**2)
+        z = np.linspace(-self.target_r, self.target_r, 100)
+        y = np.linspace(-self.target_r, self.target_r, 100)
 
-        fig.add_surface(x=xv,y=yv,z=zv,surfacecolor=xv,showscale=False)
+        zv, yv = np.meshgrid(z, y)
+        xv = 1.0 * (zv**2 + yv**2 < self.target_r**2)
+
+        fig.add_surface(x=xv, y=yv, z=zv, surfacecolor=xv, showscale=False)
 
         # Get a subset of the trajectory dataframe
-        index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-1),num=30).astype(int)
+        index_list = np.linspace(
+            start=0, stop=(len(trajectory_df.index) - 1), num=30
+        ).astype(int)
         reduced_trajectory_df = trajectory_df.iloc[index_list]
 
         # Add velocity vector
@@ -446,23 +461,28 @@ class Rocket6DOF(Env):
         )
 
         fig.update_layout(
-            scene = dict(
-                    xaxis_title='X [m]',
-                    yaxis_title='Y [m]',
-                    zaxis_title='Z [m]',
-                    aspectmode='data',
-                    camera_up=dict(x=1, y=0, z=0)
-                    )
+            scene=dict(
+                xaxis_title="X [m]",
+                yaxis_title="Y [m]",
+                zaxis_title="Z [m]",
+                aspectmode="data",
+                camera_up=dict(x=1, y=0, z=0),
+            )
         )
         return fig
 
     def _atarg_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
-        
+
         # Create atarg dataframe
         atarg_df = self.atarg_to_dataframe()
 
-        fig = px.line_3d(trajectory_df[["x", "y", "z"]], x="x", y="y", z="z",)
+        fig = px.line_3d(
+            trajectory_df[["x", "y", "z"]],
+            x="x",
+            y="y",
+            z="z",
+        )
 
         x_f, y_f, z_f = self.landing_target
 
@@ -470,7 +490,9 @@ class Rocket6DOF(Env):
         fig.add_scatter3d(x=[x_f], y=[y_f], z=[z_f])
 
         # Get a subset of the trajectory dataframe
-        index_list = np.linspace(start=0,stop=(len(trajectory_df.index)-2),num=30).astype(int)
+        index_list = np.linspace(
+            start=0, stop=(len(trajectory_df.index) - 2), num=30
+        ).astype(int)
         downsampled_traj = trajectory_df.iloc[index_list]
         downsampled_atarg = atarg_df.iloc[index_list]
 
@@ -478,20 +500,20 @@ class Rocket6DOF(Env):
             x=downsampled_traj["x"],
             y=downsampled_traj["y"],
             z=downsampled_traj["z"],
-            u=downsampled_atarg['ax'],
-            v=downsampled_atarg['ay'],
-            w=downsampled_atarg['az'],
-            sizeref=8
+            u=downsampled_atarg["ax"],
+            v=downsampled_atarg["ay"],
+            w=downsampled_atarg["az"],
+            sizeref=8,
         )
 
         fig.update_layout(
-            scene = dict(
-                    xaxis_title='X [m]',
-                    yaxis_title='Y [m]',
-                    zaxis_title='Z [m]',
-                    aspectmode='data',
-                    camera_up=dict(x=1, y=0, z=0)
-                    )
+            scene=dict(
+                xaxis_title="X [m]",
+                yaxis_title="Y [m]",
+                zaxis_title="Z [m]",
+                aspectmode="data",
+                camera_up=dict(x=1, y=0, z=0),
+            )
         )
 
         return fig
@@ -523,43 +545,48 @@ class Rocket6DOF(Env):
     def _get_obs(self):
         return self._normalize_obs(self.state)
 
-    def _compute_atarg(self,r,v,mass):
-        
-        def __compute_t_go(r,v) -> float:
+    def _compute_atarg(self, r, v, mass):
+        def __compute_t_go(r, v) -> float:
             # In order to compute the t_go the following depressed
             # quartic equation has to be solved:
             # $g^2t_{go}^4-4||\mathbf{v}||^2t_{go}^2-24\mathbf{r}^t\mathbf{v}t_{go}-36||\mathbf{r}||^2=0
 
-            solutions = np.roots([
-                g[0]**2,
-                0,
-                -4*np.linalg.norm(v)**2,
-                -24*np.dot(r,v),
-                -36*np.linalg.norm(r)**2,
-                ])
+            solutions = np.roots(
+                [
+                    g[0] ** 2,
+                    0,
+                    -4 * np.linalg.norm(v) ** 2,
+                    -24 * np.dot(r, v),
+                    -36 * np.linalg.norm(r) ** 2,
+                ]
+            )
 
-            real_positive_root = [n for n in solutions if (n.imag == 0 and n.real>0)][0].real
+            real_positive_root = [n for n in solutions if (n.imag == 0 and n.real > 0)][
+                0
+            ].real
 
             # Check that we have only one real solution
-            #assert len(real_positive_roots) == 1, 'Multiple real solutions to t_go equation'
+            # assert len(real_positive_roots) == 1, 'Multiple real solutions to t_go equation'
 
             return real_positive_root
 
-        g = [-9.81,0,0] # Gravitational vector
+        g = [-9.81, 0, 0]  # Gravitational vector
 
         # Determine the time to go
-        t_go = __compute_t_go(r,v)
-    
-        def saturation(q,U) -> np.ndarray:
+        t_go = __compute_t_go(r, v)
+
+        def saturation(q, U) -> np.ndarray:
             # Saturation function of vector q w.r.t magnitude U
             q_norm = np.linalg.norm(q)
-            if q_norm<=U:
+            if q_norm <= U:
                 return q
             else:
-                return q*U/q_norm
+                return q * U / q_norm
 
         # Compute the saturated optimal target acceleration
-        a_targ = saturation(-6*r/t_go**2 - 4*v/t_go - g,self.max_thrust/mass)
+        a_targ = saturation(
+            -6 * r / t_go**2 - 4 * v / t_go - g, self.max_thrust / mass
+        )
 
         self.atarg_history.append(a_targ)
 
@@ -592,7 +619,7 @@ class Rocket6DOF(Env):
         r = np.float32(state[0:3])
         return not bool(self.position_bounds_space.contains(r))
 
-    #TODO: delete
+    # TODO: delete
     def _check_landing(self, state):
 
         r = np.linalg.norm(state[0:3])
@@ -642,7 +669,6 @@ class Rocket6DOF(Env):
         }
         return mapping
 
-    
     def _compute_vtarg(self, r, v):
         tau_1 = 20
         tau_2 = 100
@@ -673,10 +699,9 @@ class Rocket6DOF(Env):
 
         return v_targ, t_go
 
-
     def _vtarg_plot_figure(self, trajectory_df: DataFrame):
         import plotly.express as px
-        
+
         # Create vtarg dataframe
         vtarg_df = self.vtarg_to_dataframe()
 
@@ -698,13 +723,13 @@ class Rocket6DOF(Env):
             x=trajectory_df["x"],
             y=trajectory_df["y"],
             z=trajectory_df["z"],
-            u=vtarg_df["v_x"], # TODO: CHANGE TO vtarg
+            u=vtarg_df["v_x"],  # TODO: CHANGE TO vtarg
             v=vtarg_df["v_y"],
             w=vtarg_df["v_z"],
             sizeref=3,
         )
 
-        fig.update_layout(scene_aspectmode='data')
+        fig.update_layout(scene_aspectmode="data")
 
         return fig
 
@@ -716,3 +741,4 @@ class Rocket6DOF(Env):
         import pandas as pd
 
         return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z"])
+

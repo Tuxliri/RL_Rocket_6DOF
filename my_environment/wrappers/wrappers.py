@@ -18,24 +18,6 @@ import pandas as pd
 
 pd.options.plotting.backend = "plotly"
 
-class GaudetStateObs(gym.ObservationWrapper): #TODO: adapt to 6DOF environment
-    def __init__(self, env) -> None:
-        super().__init__(env)
-        self.observation_space = Box(low=-1, high=1, shape=(4,))
-
-    def observation(self, observation):
-        x, y, th = observation[0:3]
-        vx, vy, vth = observation[3:6]
-
-        r = np.array([x, y])
-        v = np.array([vx, vy])
-
-        # TODO: deprecate as in this branch we use atarg
-        v_targ, t_go = self.env.unwrapped.compute_vtarg(r, v)
-        vx_targ, vy_targ = v_targ
-
-        return np.float32([vx - vx_targ, vy - vy_targ, t_go, y])
-
 class RewardAnnealing(gym.Wrapper):
     def __init__(self, env: gym.Env, thrust_penalty : float = 0.01) -> None:
         super().__init__(env)

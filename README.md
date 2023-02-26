@@ -41,10 +41,7 @@ Research question:
     * Diagram of the angles ![](_images/fins_yaw_plane.png)
 
     * Position vector of the fin `i` in body coordinates:
-        $$\vec{x}^{B,i} = 
-        \begin{bmatrix}
-            x_{fin}^i \\ 0 \\ \pm r_{base}
-        \end{bmatrix}$$
+        $$\vec{x}^{B,i} = \begin{bmatrix}x_{fin}^i \\ 0 \\ \pm r_{base}\end{bmatrix}$$
 
 *   Pitch plane ( `x` - `z` ) corresponding to `i={1,2}`:
     * Diagram of the angles ![](_images/fins_pitch_plane.png)

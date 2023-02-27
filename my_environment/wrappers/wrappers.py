@@ -1,5 +1,4 @@
 __all__ = [
-    "GaudetStateObs",
     "RewardAnnealing",
     "EpisodeAnalyzer",
     "RemoveMassFromObs",

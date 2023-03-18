@@ -1,6 +1,7 @@
 import numpy as np
+import logging
 
-from rocket_env import Rocket6DOF
+from .rocket_env import Rocket6DOF
 from gym.spaces import Box
 
 
@@ -30,6 +31,7 @@ class Rocket6DOF_Fins(Rocket6DOF):
             "maximum_velocity": 15,
             "landing_attitude_limit": [10, 10, 360],
             "omega_lim": [0.2, 0.2, 0.2],
+            "waypoint": 50,
         },
     ) -> None:
         super().__init__(
@@ -44,7 +46,7 @@ class Rocket6DOF_Fins(Rocket6DOF):
         )
 
         # Append fins action names
-        self.action_names.append(
+        self.action_names.extend(
             ["beta_fin_1", "beta_fin_2", "beta_fin_3", "beta_fin_4"]
         )
 
@@ -60,9 +62,16 @@ class Rocket6DOF_Fins(Rocket6DOF):
     def _denormalize_action(self, action):
         thruster_action = super()._denormalize_action(action)
 
-        fins_action = action[3:8] * self.max_fins_gimbal
-
-        denormalized_action = np.concatenate(thruster_action, fins_action)
-        assert denormalized_action.shape == [7]
+        fins_action = np.array(action[3:8]) * self.max_fins_gimbal
+        denormalized_action = np.concatenate((thruster_action, fins_action))
+        assert denormalized_action.shape == (7,)
         
         return denormalized_action
+
+    def step(self, normalized_action):
+        obs, rew, done, info = super().step(normalized_action)
+
+        info['euler_angles'] = self.rotation_obj.as_euler("zyx",degrees=True)
+        
+        return obs, rew, done, info 
+

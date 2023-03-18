@@ -1,18 +1,16 @@
 import os
 
-import torch
-
-import my_environment
+from my_environment.envs.rocket_env_fins import Rocket6DOF_Fins
 import gym
 import wandb
 
-from gym.wrappers import TimeLimit, RecordVideo
+from gym.wrappers import TimeLimit
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 
-from my_environment.wrappers import *
+from my_environment.wrappers import EpisodeAnalyzer,RemoveMassFromObs,RewardAnnealing
 from wandb.integration.sb3 import WandbCallback
 
 def load_config():
@@ -43,7 +41,7 @@ class ClipReward(gym.RewardWrapper):
 
 def make_env():
     kwargs = env_config
-    env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
+    env = ClipReward(RemoveMassFromObs(Rocket6DOF_Fins(**kwargs)))
     env = TimeLimit(
         env,
         max_episode_steps=MAX_EPISODE_STEPS
@@ -54,7 +52,7 @@ def make_env():
 
 def make_annealed_env():
     kwargs = env_config
-    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
+    env = RemoveMassFromObs((Rocket6DOF_Fins(**kwargs)))
 
     # ADD REWARD ANNEALING
     env = RewardAnnealing(env)
@@ -69,13 +67,13 @@ def make_annealed_env():
 
 def make_eval_env():
     kwargs = env_config
-    training_env = ClipReward(RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs)))
+    training_env = ClipReward(RemoveMassFromObs((Rocket6DOF_Fins(**kwargs))))
 
     return Monitor(EpisodeAnalyzer(training_env))
         
 def make_annealed_eval_env():
     kwargs = env_config
-    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
+    env = RemoveMassFromObs((Rocket6DOF_Fins(**kwargs)))
 
     # ADD REWARD ANNEALING
     env = RewardAnnealing(env)

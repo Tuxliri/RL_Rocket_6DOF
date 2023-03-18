@@ -7,7 +7,7 @@ __all__ = ["Rocket6DOF"]
 import numpy as np
 import pyvista as pv
 from gym import Env, spaces
-from my_environment.utils.simulator import Simulator6DOF
+from ..utils.simulator import Simulator6DOF
 from numpy.typing import ArrayLike
 from pandas import DataFrame
 from scipy.spatial.transform.rotation import Rotation as R
@@ -48,6 +48,7 @@ class Rocket6DOF(Env):
                 360,
             ],  # [Yaw, Pitch, Roll],
             "omega_lim": [0.2, 0.2, 0.2],
+            "waypoint": 50,
         },
     ) -> None:
 
@@ -213,7 +214,8 @@ class Rocket6DOF(Env):
         (
             self.state,
             isterminal,
-        ) = self.SIM.step(self.action)
+        ) = self.SIM.step(self.action, integration_method = "RK45")
+
         state = self.state.astype(np.float32)
 
         # Create a rotation object representing the attitude of the system
@@ -619,7 +621,7 @@ class Rocket6DOF(Env):
         r = np.float32(state[0:3])
         return not bool(self.position_bounds_space.contains(r))
 
-    # TODO: delete
+    # [TODO]: delete
     def _check_landing(self, state):
 
         r = np.linalg.norm(state[0:3])

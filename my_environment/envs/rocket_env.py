@@ -7,7 +7,7 @@ __all__ = ["Rocket6DOF"]
 import numpy as np
 import pyvista as pv
 from gym import Env, spaces
-from my_environment.utils.simulator import Simulator6DOF
+from ..utils.simulator import Simulator6DOF
 from numpy.typing import ArrayLike
 from pandas import DataFrame
 from scipy.spatial.transform.rotation import Rotation as R
@@ -165,8 +165,7 @@ class Rocket6DOF(Env):
         self.landing_attitude_limit = landing_params["landing_attitude_limit"]
 
         self.omega_lim = np.array([0.2, 0.2, 0.2])
-        self.waypoint = landing_params["waypoint"]
-
+        self.waypoint = landing_params.get("waypoint", 0)
         # Renderer variables (pyvista)
         self.rocket_body_mesh = None
         self.landing_pad_mesh = None
@@ -707,3 +706,12 @@ class Rocket6DOF(Env):
         import pandas as pd
 
         return pd.DataFrame(self.vtarg_history, columns=["v_x", "v_y", "v_z"])
+
+if __name__ == '__name__':
+
+    env = Rocket6DOF()
+    obs = env.reset()
+    action = [0.0, 0.0, 0.0]
+    obs, rew, done, info = env.step(action)
+    print("Environment Rocket6DOF ran correctly!")
+

@@ -10,6 +10,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 
 from my_environment.wrappers import *
+from my_environment.envs import Rocket6DOF_fins
 from wandb.integration.sb3 import WandbCallback
 
 def load_config():
@@ -39,9 +40,8 @@ class ClipReward(gym.RewardWrapper):
         return np.clip(reward, self.min_reward, self.max_reward)
 
 def make_env():
-    kwargs = env_config
     env = RemoveMassFromObs(
-        gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+        Rocket6DOF_fins(**env_config)
         )
     env = TimeLimit(
         env,
@@ -51,43 +51,14 @@ def make_env():
     
     return env
 
-def make_annealed_env():
-    kwargs = env_config
-    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-
-    # ADD REWARD ANNEALING
-    env = RewardAnnealing(env)
-
-    env = TimeLimit(
-        env,
-        max_episode_steps=MAX_EPISODE_STEPS
-        )
-    env = Monitor(env)    
-    
-    return env
 
 def make_eval_env():
-    kwargs = env_config
     training_env = RemoveMassFromObs(
-        gym.make("my_environment/Falcon6DOF-v0",**kwargs)
+        Rocket6DOF_fins(**env_config)
         )
 
     return Monitor(EpisodeAnalyzer(training_env))
         
-def make_annealed_eval_env():
-    kwargs = env_config
-    env = RemoveMassFromObs(gym.make("my_environment/Falcon6DOF-v0",**kwargs))
-
-    # ADD REWARD ANNEALING
-    env = RewardAnnealing(env)
-
-    env = TimeLimit(
-        env,
-        max_episode_steps=MAX_EPISODE_STEPS
-        )
-    return Monitor(
-        EpisodeAnalyzer(env),)   
-    
 def start_training():
 
     # Check if the system has a display, if not start a virtual framebuffer
@@ -140,16 +111,6 @@ def start_training():
         total_timesteps=sb3_config["total_timesteps"],
         callback=callbacksList
     )
-    
-    #annealed_env = make_annealed_env()
-
-    #model.set_env(annealed_env)
-
-    # Train the ANNEALED model
-    # model.learn(
-    #     total_timesteps=sb3_config["total_timesteps"],
-    #     callback=callbacksList
-    # )
     
     run.finish()
 

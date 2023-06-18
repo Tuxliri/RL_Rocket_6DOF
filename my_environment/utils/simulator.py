@@ -229,16 +229,17 @@ class Simulator6DOF():
         ])
 
 
-    def _get_body_torques(self, thrust_vector, velocity,attitude_quaternion,rho):
+    def _get_body_torques(self, thrust_vector, velocity_inertial,attitude_quaternion,rho):
        
         T_body_frame = self._get_thrust_body_frame(thrust_vector)
-        A_body_frame = self._get_aero_force_body(velocity, attitude_quaternion,rho)
-        
-        def cross_product(a,b):
+        A_body_frame = self._get_aero_force_body(velocity_inertial, attitude_quaternion,rho)
+
+        return self._cross_product(self.r_T_B,T_body_frame) + self._cross_product(self.r_cp_B, A_body_frame)
+    
+    @staticmethod
+    def _cross_product(a,b):
             return np.array([
                 a[1]*b[2]-a[2]*b[1],
                 a[2]*b[0]-a[0]*b[2],
                 a[0]*b[1]-a[1]*b[0]
             ])
-
-        return cross_product(self.r_T_B,T_body_frame) + cross_product(self.r_cp_B, A_body_frame)

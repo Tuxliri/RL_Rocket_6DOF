@@ -1,2 +1,2 @@
-from my_environment.envs.rocket_env import *
-from my_environment.utils import simulator
+from .rocket_env import *
+from .rocket_env_fins import Rocket6DOF_fins

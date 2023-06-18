@@ -35,6 +35,10 @@ To run the algorithm in a Docker container follow these steps:
     * To run the docker container offline run:
         
         `docker run -e WANDB_MODE=offline -it rl_rocket_docker`
+    
+    * To run the container in detached mode execute:
+
+        `docker run -e WANDB_API_KEY=$YOUR_API_KEY$ -d rl_rocket_docker:latest `
 
 ## Aerodynamic fins control
 The `Rocket6DOF_fins` provides a 6DOF simulator with fins.

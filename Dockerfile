@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY config.yaml .
 COPY my_environment /my_environment/my_environment
 COPY setup.py /my_environment
-COPY main_6DOF.py .
+COPY main_6DOF_ray.py .
 COPY docker_startup.sh .
 
 RUN pip install -e /my_environment

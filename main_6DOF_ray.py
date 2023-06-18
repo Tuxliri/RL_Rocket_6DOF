@@ -27,21 +27,7 @@ sb3_config, env_config = load_config()
 
 MAX_EPISODE_STEPS = int(sb3_config["max_time"] / env_config["timestep"])
 
-
-class ClipReward(gym.RewardWrapper):
-    def __init__(self, env, min_reward=-1, max_reward=100):
-        super().__init__(env)
-        self.min_reward = min_reward
-        self.max_reward = max_reward
-        self.reward_range = (min_reward, max_reward)
-
-    def reward(self, reward):
-        import numpy as np
-        return np.clip(reward, self.min_reward, self.max_reward)
-
-
-@ray.remote
-def make_env():
+def make_env(context):
     env = RemoveMassFromObs(
         Rocket6DOF_fins(**env_config)
     )
@@ -49,19 +35,21 @@ def make_env():
         env,
         max_episode_steps=MAX_EPISODE_STEPS
     )
-    env = Monitor(env)
 
     return env
 
 
-@ray.remote
+tune.register_env("training_env", make_env)  # Register the environment with a name
+
+
 def make_eval_env():
     training_env = RemoveMassFromObs(
         Rocket6DOF_fins(**env_config)
     )
 
-    return Monitor(EpisodeAnalyzer(training_env))
+    return EpisodeAnalyzer(training_env)
 
+tune.register_env("eval_env", make_env)  # Register the environment with a name
 
 class EvalAndWandbCallbacks(EvalCallback, WandbCallback):
     def __init__(self, eval_env):
@@ -97,17 +85,15 @@ def start_training():
     )
 
     config = {
-        "env": make_env.remote(),
+        "env": 'training_env',  # Convert Ray object reference to environment object
         "model": {
             "vf_share_layers": True,
             "fcnet_hiddens": [128, 64]
         },
-        "batch_size": 512,
         "num_sgd_iter": 10,
         "lr": 0.001,
         "rollout_fragment_length": 16384,
         "train_batch_size": 32768,
-        "callbacks": EvalAndWandbCallbacks(make_eval_env.remote()),
         "evaluation_interval": 100,
         "evaluation_num_episodes": 15,
         "evaluation_config": {

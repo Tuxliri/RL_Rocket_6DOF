@@ -8,6 +8,8 @@ from gym.wrappers import TimeLimit
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.env_util import make_vec_env
 
 from my_environment.wrappers import *
 from my_environment.envs import Rocket6DOF_fins
@@ -47,10 +49,12 @@ def make_env():
         env,
         max_episode_steps=MAX_EPISODE_STEPS
         )
-    env = Monitor(env)    
     
     return env
 
+def make_vec_envs(num_cpu=4):
+    vec_env = SubprocVecEnv([make_env for i in range(num_cpu)])
+    return Monitor(vec_env)
 
 def make_eval_env():
     training_env = RemoveMassFromObs(

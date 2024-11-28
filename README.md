@@ -1,4 +1,7 @@
 # RL_rocket
+
+![image](https://github.com/user-attachments/assets/424d0c10-5d9c-4f9d-8dc7-4d51a436cd43)
+
 Repository for the development of my master thesis on control of launch vehicles descent and landing through reinforcement learning actors.
 
 ## 6DOF problem

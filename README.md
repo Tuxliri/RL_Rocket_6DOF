@@ -3,6 +3,7 @@
 <img src="https://github.com/user-attachments/assets/424d0c10-5d9c-4f9d-8dc7-4d51a436cd43" alt="Trajectory" width="500" height="auto" />
 
 Repository for the development of my master thesis on control of launch vehicles descent and landing through reinforcement learning actors.
+[Gym environment](https://github.com/Tuxliri/rocket-env) available separately.
 
 ## 6DOF problem
 In this repository a full 6DOF rocket landing environment is developed, with realistic dynamics equation modeled on a rigid body assumption.
